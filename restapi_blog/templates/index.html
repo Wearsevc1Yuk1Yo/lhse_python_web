@@ -9,7 +9,7 @@
     <div class="container">
         <header class="header">
             <h1>Мой Блог</h1>
-            
+
             <!-- Панель пользователя -->
             <div class="user-panel">
                 {% if current_user %}
@@ -17,7 +17,7 @@
                         <span>Вы вошли как: <strong>{{ current_user.login }}</strong></span>
                         <div class="user-actions">
                             <a href="/logout" class="btn-secondary">Выйти</a>
-                            
+
                             <!-- Переключение между пользователями -->
                             {% if all_users|length > 1 %}
                             <div class="user-switcher">
@@ -52,6 +52,17 @@
             <a href="/api/posts">📄 API постов</a>
         </div>
 
+
+        <div class="search-container">
+            <h2>Поиск постов</h2>
+            <form method="get" action="/search">
+                <div class="form-group">
+                    <input type="text" name="q" placeholder="Введите заголовок или текст поста..." class="search-input">
+                    <button type="submit" class="btn-primary">Найти</button>
+                </div>
+            </form>
+        </div>
+
         <!-- Уведомление если нет пользователей -->
         {% if not has_users %}
         <div class="alert alert-warning">
@@ -74,7 +85,7 @@
                     <div class="post">
                         <h3><a href="/post/{{ post.id }}">{{ post.title }}</a></h3>
                         <p class="post-meta">
-                            <strong>Автор:</strong> {{ post.author_name }} | 
+                            <strong>Автор:</strong> {{ post.author_name }} |
                             <strong>Дата:</strong> {{ post.created_at }}
                         </p>
                         <p class="post-preview">{{ post.content_preview }}</p>

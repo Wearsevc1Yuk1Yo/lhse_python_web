@@ -1,99 +1,270 @@
-from fastapi import HTTPException
 from datetime import datetime
-from models.post import Post, posts_db
-from models.user import users_db
+
+from core.database import execute_query
+from fastapi import HTTPException, status
 from schemas.post import PostCreate, PostUpdate
-from utils.storage import save_data
+
 
 class PostService:
     @staticmethod
-    async def create_post(post_data: PostCreate):
-        if post_data.author_id not in users_db:
-            raise HTTPException(status_code=404, detail="Автор не найден")
-        
-        if not post_data.title.strip():
-            raise HTTPException(status_code=400, detail="Заголовок не может быть пустым")
-        
-        if not post_data.content.strip():
-            raise HTTPException(status_code=400, detail="Содержание не может быть пустым")
-        
-        new_post = Post(post_data.author_id, post_data.title.strip(), post_data.content.strip())
-        posts_db[new_post.id] = new_post
-        save_data()
+    async def create_post(post_data: PostCreate, current_user_id: int):
+        # Проверяем существование автора
+        author = execute_query(
+            "SELECT id FROM users WHERE id = %s", (current_user_id,), fetch=True
+        )
+        if not author:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Автор не найден"
+            )
 
-        return {
-            "id": new_post.id,
-            "author_id": new_post.author_id,
-            "title": new_post.title,
-            "content": new_post.content,
-            "created_at": new_post.created_at.isoformat(),
-            "updated_at": new_post.updated_at.isoformat()
-        }
+        # Проверка заголовка
+        if not post_data.title.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Заголовок не может быть пустым",
+            )
+
+        # Проверка содержания
+        if not post_data.content.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Содержание не может быть пустым",
+            )
+
+        # Создаем пост
+        try:
+            result = execute_query(
+                """
+                INSERT INTO posts (user_id, title, content)
+                VALUES (%s, %s, %s)
+                RETURNING id, user_id, title, content, created_at, updated_at
+            """,
+                (current_user_id, post_data.title.strip(), post_data.content.strip()),
+                fetch=True,
+            )
+
+            post = result[0]
+            return {
+                "id": post[0],
+                "author_id": post[1],
+                "title": post[2],
+                "content": post[3],
+                "created_at": post[4].isoformat(),
+                "updated_at": post[5].isoformat(),
+            }
+        except Exception as e:
+            print(f"Ошибка создания поста: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка создания поста",
+            )
 
     @staticmethod
-    async def get_all_posts():
-        posts_list = []
-        for post in posts_db.values():
-            posts_list.append({
-                "id": post.id,
-                "author_id": post.author_id,
-                "title": post.title,
-                "content": post.content,
-                "created_at": post.created_at.isoformat(),
-                "updated_at": post.updated_at.isoformat()
-            })
-        return posts_list
+    async def get_all_posts(skip: int = 0, limit: int = 10, search_query: str = None):
+        try:
+            if search_query:
+                # Поиск по заголовку и содержанию
+                query = """
+                    SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
+                    FROM posts p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.title ILIKE %s OR p.content ILIKE %s
+                    ORDER BY p.created_at DESC
+                    LIMIT %s OFFSET %s
+                """
+                search_term = f"%{search_query}%"
+                params = (search_term, search_term, limit, skip)
+            else:
+                query = """
+                    SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
+                    FROM posts p
+                    JOIN users u ON p.user_id = u.id
+                    ORDER BY p.created_at DESC
+                    LIMIT %s OFFSET %s
+                """
+                params = (limit, skip)
+
+            posts = execute_query(query, params, fetch=True)
+
+            result = []
+            for post in posts:
+                content_preview = (
+                    post[3][:100] + "..." if len(post[3]) > 100 else post[3]
+                )
+                result.append(
+                    {
+                        "id": post[0],
+                        "author_id": post[1],
+                        "title": post[2],
+                        "content_preview": content_preview,
+                        "created_at": post[4].isoformat(),
+                        "updated_at": post[5].isoformat(),
+                        "author_name": post[6],
+                    }
+                )
+
+            return result
+        except Exception as e:
+            print(f"Ошибка получения постов: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка получения постов",
+            )
 
     @staticmethod
     async def get_post(post_id: int):
-        if post_id not in posts_db:
-            raise HTTPException(status_code=404, detail="Пост не найден")
-        
-        post = posts_db[post_id]
-        return {
-            "id": post.id,
-            "author_id": post.author_id,
-            "title": post.title,
-            "content": post.content,
-            "created_at": post.created_at.isoformat(),
-            "updated_at": post.updated_at.isoformat()
-        }
+        try:
+            post = execute_query(
+                """
+                SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
+                FROM posts p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.id = %s
+            """,
+                (post_id,),
+                fetch=True,
+            )
+
+            if not post:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Пост не найден"
+                )
+
+            post = post[0]
+            return {
+                "id": post[0],
+                "author_id": post[1],
+                "title": post[2],
+                "content": post[3],
+                "created_at": post[4].isoformat(),
+                "updated_at": post[5].isoformat(),
+                "author_name": post[6],
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Ошибка получения поста: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка получения поста",
+            )
 
     @staticmethod
-    async def update_post(post_id: int, post_data: PostUpdate):
-        if post_id not in posts_db:
-            raise HTTPException(status_code=404, detail="Пост не найден")
-        
-        post = posts_db[post_id]
-        
-        if post_data.title is not None:
-            if not post_data.title.strip():
-                raise HTTPException(status_code=400, detail="Заголовок не может быть пустым")
-            post.title = post_data.title.strip()
+    async def update_post(post_id: int, post_data: PostUpdate, current_user_id: int):
+        # Сначала проверяем, существует ли пост
+        post = await PostService.get_post(post_id)
 
-        if post_data.content is not None:
-            if not post_data.content.strip():
-                raise HTTPException(status_code=400, detail="Содержание не может быть пустым")
-            post.content = post_data.content.strip()
-        
-        post.updated_at = datetime.now()
-        save_data()
+        # Проверяем права доступа - можно обновлять только свой пост
+        if post["author_id"] != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Вы можете редактировать только свои посты",
+            )
 
-        return {
-            "id": post.id,
-            "author_id": post.author_id,
-            "title": post.title,
-            "content": post.content,
-            "created_at": post.created_at.isoformat(),
-            "updated_at": post.updated_at.isoformat()
-        }
+        update_fields = []
+        params = []
+
+        if post_data.title is not None and post_data.title.strip():
+            update_fields.append("title = %s")
+            params.append(post_data.title.strip())
+
+        if post_data.content is not None and post_data.content.strip():
+            update_fields.append("content = %s")
+            params.append(post_data.content.strip())
+
+        if not update_fields:
+            return post
+
+        params.append(post_id)
+
+        try:
+            query = f"""
+                UPDATE posts
+                SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                RETURNING id, user_id, title, content, created_at, updated_at
+            """
+
+            result = execute_query(query, tuple(params), fetch=True)
+
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Пост не найден"
+                )
+
+            post = result[0]
+            return {
+                "id": post[0],
+                "author_id": post[1],
+                "title": post[2],
+                "content": post[3],
+                "created_at": post[4].isoformat(),
+                "updated_at": post[5].isoformat(),
+                "author_name": post["author_name"],  # Сохраняем имя автора
+            }
+        except Exception as e:
+            print(f"Ошибка обновления поста: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка обновления поста",
+            )
 
     @staticmethod
-    async def delete_post(post_id: int):
-        if post_id not in posts_db:
-            raise HTTPException(status_code=404, detail="Пост не найден")
-        
-        del posts_db[post_id]
-        save_data()
-        
-        return {"message": f"Пост с ID {post_id} удален"}
+    async def delete_post(post_id: int, current_user_id: int):
+        # Сначала проверяем, существует ли пост
+        post = await PostService.get_post(post_id)
+
+        # Проверяем права доступа - можно удалять только свой пост
+        if post["author_id"] != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Вы можете удалять только свои посты",
+            )
+
+        try:
+            # Удаляем связанные комментарии
+            execute_query(
+                """
+                DELETE FROM comments WHERE post_id = %s
+            """,
+                (post_id,),
+            )
+
+            # Удаляем из избранного
+            execute_query(
+                """
+                DELETE FROM favorites WHERE post_id = %s
+            """,
+                (post_id,),
+            )
+
+            # Удаляем связи с категориями
+            execute_query(
+                """
+                DELETE FROM post_categories WHERE post_id = %s
+            """,
+                (post_id,),
+            )
+
+            # Удаляем сам пост
+            execute_query(
+                """
+                DELETE FROM posts WHERE id = %s
+            """,
+                (post_id,),
+            )
+
+            return {"message": f"Пост с ID {post_id} успешно удален"}
+        except Exception as e:
+            print(f"Ошибка удаления поста: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка удаления поста: {str(e)}",
+            )
+
+    @staticmethod
+    async def search_posts(query: str, skip: int = 0, limit: int = 10):
+        """Поиск постов по заголовку и содержанию"""
+        return await PostService.get_all_posts(
+            skip=skip, limit=limit, search_query=query
+        )

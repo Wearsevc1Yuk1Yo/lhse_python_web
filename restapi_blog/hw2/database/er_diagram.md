@@ -10,7 +10,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     posts {
         bigint id PK
         bigint user_id FK "NOT NULL"
@@ -20,26 +20,26 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     categories {
         bigint id PK
         varchar name UK "NOT NULL"
         text description
         timestamptz created_at
     }
-    
+
     post_categories {
         bigint post_id FK "NOT NULL"
         bigint category_id FK "NOT NULL"
         timestamptz created_at
     }
-    
+
     favorites {
         bigint user_id FK "NOT NULL"
         bigint post_id FK "NOT NULL"
         timestamptz created_at
     }
-    
+
     comments {
         bigint id PK
         bigint user_id FK "NOT NULL"
@@ -49,7 +49,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     subscriptions {
         bigint subscriber_id FK "NOT NULL"
         bigint target_user_id FK "NOT NULL"
