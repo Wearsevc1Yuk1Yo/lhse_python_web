@@ -88,12 +88,10 @@ def load_data_from_db():
     """Загружает данные из PostgreSQL в память при запуске приложения"""
     global users_db, posts_db, next_user_id, next_post_id
 
-    # Очищаем текущие данные
     users_db.clear()
     posts_db.clear()
 
     try:
-        # Загружаем пользователей
         users = execute_query(
             """
             SELECT id, email, username, password_hash, created_at, updated_at
@@ -144,13 +142,9 @@ def load_data_from_db():
         print("⚠️  Используем данные из памяти (если есть)")
 
 
-def save_data():
-    """
-    Эта функция больше не нужна для сохранения в JSON,
-    так как все данные теперь хранятся в PostgreSQL.
-    Она оставлена для обратной совместимости.
-    """
-    print("ℹ️  Сохранение в JSON больше не требуется, данные хранятся в PostgreSQL")
+# def save_data():
+#
+#     print("Кстати сохранение в JSON больше не требуется, данные хранятся в PostgreSQL")
 
 
 def load_data():
@@ -159,7 +153,7 @@ def load_data():
     Сначала пытается загрузить данные из БД, если их нет - из JSON.
     """
     try:
-        # Сначала проверяем, есть ли данные в БД
+        # проверяем, есть ли данные в БД
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM users")
@@ -189,11 +183,11 @@ def load_data():
 
         if os.path.exists(DATA_FILE):
             try:
-                # Загружаем старый JSON файл
+                # старый JSON файл
                 with open(DATA_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Восстанавливаем данные в памяти
+                # воосстанова данных в памяти
                 for user_id_str, user_data in data.get("users", {}).items():
                     try:
                         user_id = int(user_id_str)
@@ -273,7 +267,7 @@ def get_data_stats():
         }
     except Exception as e:
         print(f"Ошибка получения статистики: {e}")
-        # Возвращаем статистику из памяти как резервный вариант
+
         return {
             "users_count": len(users_db),
             "posts_count": len(posts_db),

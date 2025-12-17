@@ -1,4 +1,4 @@
-from datetime import datetime
+# from datetime import datetime
 
 from core.database import execute_query
 from fastapi import HTTPException, status
@@ -8,7 +8,7 @@ from schemas.post import PostCreate, PostUpdate
 class PostService:
     @staticmethod
     async def create_post(post_data: PostCreate, current_user_id: int):
-        # Проверяем существование автора
+        # существование автора
         author = execute_query(
             "SELECT id FROM users WHERE id = %s", (current_user_id,), fetch=True
         )
@@ -64,19 +64,17 @@ class PostService:
         try:
             if search_query:
                 # Поиск по заголовку и содержанию
-                query = """
-                    SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
-                    FROM posts p
-                    JOIN users u ON p.user_id = u.id
-                    WHERE p.title ILIKE %s OR p.content ILIKE %s
-                    ORDER BY p.created_at DESC
-                    LIMIT %s OFFSET %s
-                """
+                query = (
+                    f"UPDATE posts SET {', '.join(update_fields)}, "
+                    f"updated_at = CURRENT_TIMESTAMP WHERE id = ${param_index} "
+                    "RETURNING id, user_id, title, content, created_at, updated_at"
+                )
                 search_term = f"%{search_query}%"
                 params = (search_term, search_term, limit, skip)
             else:
                 query = """
-                    SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
+                    SELECT p.id, p.user_id, p.title,
+                    p.content, p.created_at, p.updated_at, u.username as author_name
                     FROM posts p
                     JOIN users u ON p.user_id = u.id
                     ORDER BY p.created_at DESC
@@ -116,7 +114,8 @@ class PostService:
         try:
             post = execute_query(
                 """
-                SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.updated_at, u.username as author_name
+                SELECT p.id, p.user_id, p.title,
+                p.content, p.created_at, p.updated_at, u.username as author_name
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.id = %s

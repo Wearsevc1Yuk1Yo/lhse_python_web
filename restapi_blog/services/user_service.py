@@ -188,10 +188,10 @@ class UserService:
             param_index += 1
 
         if not update_fields:
-            # Если нет полей для обновления, просто возвращаем текущего пользователя
+            # нет полей для обновления -> возвращаем текущего пользователя
             return await UserService.get_user(user_id)
 
-        params.append(user_id)  # Добавляем ID пользователя в конец
+        params.append(user_id)  # ID пользователя в конец
 
         try:
             placeholders = ", ".join([f"${i+1}" for i in range(len(params))])
@@ -231,11 +231,11 @@ class UserService:
 
     @staticmethod
     async def delete_user(user_id: int):
-        # Сначала проверяем, существует ли пользователь
+        # существует ли пользователь
         await UserService.get_user(user_id)
 
         try:
-            # Сначала удаляем связанные посты
+            # удаляем связанные посты
             execute_query(
                 """
                 DELETE FROM posts WHERE user_id = %s
@@ -243,7 +243,7 @@ class UserService:
                 (user_id,),
             )
 
-            # Затем удаляем самого пользователя
+            # удаляем самого пользователя
             execute_query(
                 """
                 DELETE FROM users WHERE id = %s

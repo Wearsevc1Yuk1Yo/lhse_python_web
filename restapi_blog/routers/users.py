@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from schemas.user import UserCreate, UserResponse, UserUpdate
 from services.user_service import UserService
+
+# from fastapi import HTTPException
+
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 

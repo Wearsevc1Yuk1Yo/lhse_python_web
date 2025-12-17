@@ -1,4 +1,4 @@
-from datetime import datetime
+# from datetime import datetime
 
 from core.database import execute_query
 from fastapi import HTTPException, status
@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 class CommentService:
     @staticmethod
     async def create_comment(comment_data, current_user_id):
-        # Проверяем существование поста
+        # существование поста
         post = execute_query(
             "SELECT id FROM posts WHERE id = %s", (comment_data.post_id,), fetch=True
         )

@@ -1,13 +1,13 @@
-import os
+# import os
 from typing import Optional
 
-import psycopg2
+# import psycopg2
 import uvicorn
 from core.config import settings
-# Импорты из вашего проекта
 from core.exceptions import (bad_request_handler, internal_error_handler,
                              not_found_handler)
-from fastapi import FastAPI, Form, Request, Response, status
+from fastapi import FastAPI, Form, Request
+# from fastapi import Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,7 +22,7 @@ from utils.storage import load_data
 
 app = FastAPI(title="Simple Blog API")
 
-# Добавляем middleware для сессий (до всех других middleware и роутеров)
+# middleware для сессий (до всех других middleware и роутеров)
 from starlette.middleware.sessions import SessionMiddleware
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
@@ -41,24 +41,29 @@ app.add_exception_handler(400, bad_request_handler)
 app.add_exception_handler(500, internal_error_handler)
 
 
+def test_connection():
+    from core.database import connection_pool
+
+    try:
+        conn = connection_pool.getconn()
+        print("✅ Успешное подключение к базе данных PostgreSQL")
+        connection_pool.putconn(conn)
+    except Exception as e:
+        print(f"❌ Ошибка подключения к базе данных: {e}")
+        print(f"⚠️  Проверьте строку подключения: {settings.DATABASE_URL}")
+        return False
+    return True
+
+
 def test_database_connection():
     """Проверяет подключение к базе данных PostgreSQL"""
     try:
         # Попытка подключения к базе данных
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        from core.database import connection_pool
+
+        conn = connection_pool.getconn()
         print("✅ Успешное подключение к базе данных PostgreSQL")
-        conn.close()
-
-        # Импорт и инициализация базы данных
-        from core.database import initialize_database
-        from utils.storage import migrate_from_json
-
-        # Инициализируем базу данных при запуске приложения
-        initialize_database()
-
-        # Мигрируем данные из JSON в PostgreSQL, если нужно
-        migrate_from_json()
-
+        connection_pool.putconn(conn)
         return True
     except Exception as e:
         print(f"❌ Ошибка подключения к базе данных: {e}")
@@ -73,7 +78,8 @@ load_data()
 # Проверяем подключение к базе данных при запуске
 if __name__ == "__main__":
     print(
-        f"🚀 Запуск приложения '{settings.PROJECT_NAME}' версии {settings.PROJECT_VERSION}"
+        f"🚀 Запуск приложения '{settings.PROJECT_NAME}' "
+        f"версии {settings.PROJECT_VERSION}"
     )
     print(f"📁 Путь к файлу данных: {settings.DATA_FILE}")
 
@@ -84,8 +90,10 @@ if __name__ == "__main__":
     from utils.storage import get_data_stats
 
     stats = get_data_stats()
+
     print(
-        f"📊 Статистика данных: {stats['users_count']} пользователей, {stats['posts_count']} постов"
+        f"📊 Статистика данных: {stats['users_count']} пользователей, "
+        f"{stats['posts_count']} постов"
     )
 
 
@@ -331,4 +339,22 @@ async def delete_post_page(request: Request, post_id: int):
 
 
 if __name__ == "__main__":
+    # middleware для сессий
+    from starlette.middleware.sessions import SessionMiddleware
+
+    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
+    # подключение к базе данных
+    print("🔍 Проверка подключения к базе данных...")
+    db_connected = test_database_connection()
+
+    if db_connected:
+        print("✅ База данных доступна, запускаем приложение")
+    else:
+        print("⚠️  База данных недоступна, приложение будет работать с JSON-файлом")
+
+    print(
+        f"🚀 Запуск приложения '{settings.PROJECT_NAME}'"
+        "версии {settings.PROJECT_VERSION}"
+    )
     uvicorn.run(app, host="127.0.0.1", port=8000)
