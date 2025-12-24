@@ -11,6 +11,42 @@
         <p><strong>Обновлен:</strong> {{ post.updated_at }}</p>
         <div style="white-space: pre-line; margin: 20px 0;">{{ post.content }}</div>
     </div>
+
+    <h3>Комментарии</h3>
+
+    {% if comments %}
+        <ul class="comments">
+            {% for c in comments %}
+                <li>
+                    <p><strong>{{ c.author_name }}</strong> ({{ c.created_at }})</p>
+                    <p style="white-space: pre-line">{{ c.content }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Пока нет комментариев.</p>
+    {% endif %}
+
+    <h3>💬 Комментарии ({{ post.comments|length }})</h3>
+
+    {% if current_user %}
+    <form method="post" action="/post/{{ post.id }}/comment" style="margin-bottom: 20px;">
+        <textarea name="content" required
+                placeholder="Ваш комментарий..."
+                style="width: 100%; height: 80px; padding: 10px; border-radius: 5px;"></textarea>
+        <button type="submit" style="margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">Опубликовать</button>
+    </form>
+    {% else %}
+    <p><a href="/login">Войдите</a>, чтобы комментировать</p>
+    {% endif %}
+
+    {% for comment in post.comments %}
+    <div style="border-left: 3px solid #007bff; padding-left: 15px; margin: 15px 0; background: #f8f9fa; padding: 15px; border-radius: 5px;">
+        <strong>{{ comment[2] }}</strong> <small>({{ comment[4].strftime('%H:%M %d.%m.%Y') }})</small>
+        <p>{{ comment[3] }}</p>
+    </div>
+    {% endfor %}
+
     <div class="nav">
         <a href="/">← На главную</a> |
         <a href="/edit-post/{{ post.id }}">✏️ Редактировать</a> |

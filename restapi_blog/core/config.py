@@ -14,13 +14,8 @@ class Settings:
     DATA_FILE: str = os.getenv("BLOG_DATA_FILE", "blog_data.json")
 
     # для базы данных
-    DATABASE_URL: str = (
-        os.getenv(
-            "DATABASE_URL",
-            "postgresql://blog_user:blog_password@localhost:5432/blog_db",
-        )
-        .encode("utf-8")
-        .decode("utf-8")
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", "postgresql://blog_user:blog_password@localhost:5432/blog_db"
     )
 
     # not sure bout this thing tho

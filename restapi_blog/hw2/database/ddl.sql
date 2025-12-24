@@ -1,5 +1,5 @@
 -- таблица пользователей
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE users (
 );
 
 -- таблица постов
-CREATE TABLE posts (
+CREATE TABLE IF NOT EXISTS posts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(500) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE posts (
 );
 
 -- таблица категорий (тэгов)
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
@@ -28,7 +28,7 @@ CREATE TABLE categories (
 );
 
 -- многие-ко-многим (посты и категории)
-CREATE TABLE post_categories (
+CREATE TABLE IF NOT EXISTS post_categories (
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -36,7 +36,7 @@ CREATE TABLE post_categories (
 );
 
 -- таблица избранных (сохраненные посты)
-CREATE TABLE favorites (
+CREATE TABLE IF NOT EXISTS favorites (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -44,7 +44,7 @@ CREATE TABLE favorites (
 );
 
 -- таблицы комментов
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ CREATE TABLE comments (
 );
 
 -- таблица подписок
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
     subscriber_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     target_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -64,15 +64,15 @@ CREATE TABLE subscriptions (
 );
 
 -- индексы
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at);
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
-CREATE INDEX idx_favorites_user_id ON favorites(user_id);
-CREATE INDEX idx_subscriptions_subscriber_id ON subscriptions(subscriber_id);
-CREATE INDEX idx_subscriptions_target_user_id ON subscriptions(target_user_id);
-CREATE INDEX idx_post_categories_post_id ON post_categories(post_id);
-CREATE INDEX idx_post_categories_category_id ON post_categories(category_id);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_subscriber_id ON subscriptions(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_target_user_id ON subscriptions(target_user_id);
+CREATE INDEX IF NOT EXISTS idx_post_categories_post_id ON post_categories(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_categories_category_id ON post_categories(category_id);
 
 -- автомо обновление updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -82,6 +82,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
+-- $$ LANGUAGE plpgsql;
+-- DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_posts_updated_at ON posts;
+DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

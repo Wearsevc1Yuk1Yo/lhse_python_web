@@ -11,7 +11,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class UserService:
     @staticmethod
     def get_password_hash(password: str) -> str:
-        return pwd_context.hash(password)
+        try:
+            return pwd_context.hash(password)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пароль слишком длинный или содержит слишком сложные символы, сократите его до 72 байт.",
+            ) from e
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -22,53 +28,78 @@ class UserService:
 
     @staticmethod
     async def create_user(user_data: UserCreate):
+        print(f"🔧 Создание: email={user_data.email}, login={user_data.login}")
+
         # Проверка уникальности email
         existing_user = execute_query(
-            "SELECT id FROM users WHERE email = %s", (user_data.email,), fetch=True
+            "SELECT id FROM users WHERE email = %s OR username = %s",
+            (user_data.email, user_data.login),
+            fetch=True,
         )
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Пользователь с таким email уже существует",
             )
+        hashed_password = UserService.get_password_hash(user_data.password)
+        result = execute_query(
+            """
+            INSERT INTO users (email, username, password_hash, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
+            RETURNING id, email, username
+            """,
+            (user_data.email, user_data.login, hashed_password),
+            fetch=True,
+        )
+        print(f"🔥 INSERT результат: {result}")
 
         # Проверка уникальности логина
-        existing_user = execute_query(
-            "SELECT id FROM users WHERE username = %s", (user_data.login,), fetch=True
-        )
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Пользователь с таким логином уже существует",
-            )
+        # existing_user = execute_query(
+        #     "SELECT id FROM users WHERE username = %s",
+        # (user_data.login,), fetch=True
+        # )
 
-        hashed_password = UserService.get_password_hash(user_data.password)
+        # if existing_user:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail="Пользователь с таким логином уже существует",
+        #     )
 
-        try:
-            result = execute_query(
-                """
-                INSERT INTO users (email, username, password_hash)
-                VALUES (%s, %s, %s)
-                RETURNING id, email, username, created_at, updated_at
-            """,
-                (user_data.email, user_data.login, hashed_password),
-                fetch=True,
-            )
+        # hashed_password = UserService.get_password_hash(user_data.password)
+        if not result:
+            raise HTTPException(500, "Не удалось создать пользователя")
 
-            user = result[0]
-            return {
-                "id": user[0],
-                "email": user[1],
-                "login": user[2],
-                "created_at": user[3].isoformat(),
-                "updated_at": user[4].isoformat(),
-            }
-        except Exception as e:
-            print(f"Ошибка создания пользователя: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Ошибка создания пользователя",
-            )
+        user = result[0]
+        new_user = {"id": user[0], "email": user[1], "login": user[2]}
+        print(f"✅ СОЗДАН: ID={new_user['id']} ({new_user['login']})")
+
+        return new_user
+
+        # try:
+        #     result = execute_query(
+        #         """
+        #         INSERT INTO users (email, username, password_hash)
+        #         VALUES (%s, %s, %s)
+        #         RETURNING id, email, username, created_at, updated_at
+        #     """,
+        #         (user_data.email, user_data.login, hashed_password),
+        #         fetch=True,
+        #     )
+
+        #     user = result[0]
+        #     return {
+        #         "id": user[0],
+        #         "email": user[1],
+        #         "login": user[2],
+        #         "created_at": user[3].isoformat(),
+        #         "updated_at": user[4].isoformat(),
+        #     }
+        # except Exception as e:
+        #     print(f"Ошибка создания пользователя: {e}")
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="Ошибка создания пользователя",
+        #     )
 
     @staticmethod
     async def get_all_users():

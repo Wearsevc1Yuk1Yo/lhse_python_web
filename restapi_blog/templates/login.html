@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Вход</title>
@@ -35,4 +35,43 @@
         </div>
     </div>
 </body>
-</html>
+</html> -->
+
+{% extends "base.html" %}
+
+{% block title %}Вход{% endblock %}
+{% block header %}🔐 Вход в аккаунт{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    {% if error %}
+    <div class="alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if current_user %}
+    <div class="alert-success">
+        ✅ Вы уже авторизованы как <strong>{{ current_user.login }}</strong>
+        <a href="/">← На главную</a>
+    </div>
+    {% else %}
+    <form method="post" action="/login" class="auth-form">
+        <div class="form-group">
+            <label>👤 Логин или Email</label>
+            <input type="text" name="login" required autocomplete="username"
+                   placeholder="ggggg или user@example.com">
+        </div>
+
+        <div class="form-group">
+            <label>🔒 Пароль</label>
+            <input type="password" name="password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-login">🚀 Войти</button>
+    </form>
+
+    <div class="auth-links">
+        Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

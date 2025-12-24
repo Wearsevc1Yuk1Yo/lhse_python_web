@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Регистрация</title>
@@ -39,4 +39,62 @@
         </div>
     </div>
 </body>
-</html>
+</html> -->
+
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+{% block header %}👤 Регистрация{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto; padding: 20px;">
+    {% if error %}
+    <div style="background: #f8d7da; color: #721c24; padding: 12px; border-radius: 5px; margin-bottom: 20px;">
+        ⚠️ {{ error }}
+    </div>
+    {% endif %}
+
+    {% if current_user %}
+    <div style="background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; text-align: center;">
+        ✅ Вы уже авторизованы как <strong>{{ current_user.login }}</strong>
+        <br><a href="/" style="color: #155724;">← На главную</a>
+    </div>
+    {% else %}
+    <form method="post" action="/register" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">📧 Email</label>
+            <input type="email" name="email" required
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;"
+                   placeholder="user@example.com">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">👤 Логин</label>
+            <input type="text" name="login" required autocomplete="username"
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;"
+                   placeholder="Ваш логин">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">🔒 Пароль</label>
+            <input type="password" name="password" required minlength="3"
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;"
+                   placeholder="Минимум 3 символа">
+        </div>
+
+        <button type="submit" style="
+            width: 100%; padding: 14px; background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s;
+        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+            🚀 Зарегистрироваться
+        </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 25px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        Уже есть аккаунт? <a href="/login" style="color: #007bff; font-weight: bold;">Войти</a>
+        <br><a href="/" style="color: #6c757d;">← На главную</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

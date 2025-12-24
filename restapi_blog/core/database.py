@@ -42,12 +42,15 @@ def fix_url_encoding(url: str) -> str:
 # Исправляем строку подключения
 fixed_database_url = fix_url_encoding(settings.DATABASE_URL)
 
+print(fixed_database_url)
+print(settings.DATABASE_URL)
+
 # Создаем пул соединений с явным указанием кодировки
 connection_pool = SimpleConnectionPool(
     1,  # Минимальное количество соединений
     10,  # Максимальное количество соединений
     dsn=fixed_database_url,
-    client_encoding="utf8",
+    client_encoding="KOI8R",
 )
 
 
@@ -75,25 +78,26 @@ def release_db_connection(conn):
 def execute_query(query, params=None, fetch=False):
     """
     функция для выполнения запросов к базе данных"""
+
     conn = get_db_connection()
+    conn.set_client_encoding("KOI8R")
+
     cursor = conn.cursor()
+
     try:
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-
+        cursor.execute(query, params or ())
+        conn.commit()
         if fetch:
-            result = cursor.fetchall()
-        else:
-            conn.commit()
-            result = None
+            return cursor.fetchall()
+        return True
 
-        return result
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка выполнения запроса: {e}")
+        print(f"❌ Ошибка SQL: {query}")
+        print(f"   Параметры: {params}")
+        print(f"   Ошибка: {e}")
         raise
+
     finally:
         cursor.close()
         release_db_connection(conn)

@@ -19,7 +19,7 @@
                             <a href="/logout" class="btn-secondary">Выйти</a>
 
                             <!-- Переключение между пользователями -->
-                            {% if all_users|length > 1 %}
+                            <!-- {% if all_users|length > 1 %}
                             <div class="user-switcher">
                                 <span>Переключиться на:</span>
                                 <select onchange="switchUser(this.value)">
@@ -31,7 +31,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            {% endif %}
+                            {% endif %} -->
                         </div>
                     </div>
                 {% else %}
@@ -55,7 +55,7 @@
 
         <div class="search-container">
             <h2>Поиск постов</h2>
-            <form method="get" action="/search">
+            <form method="get" action="/">
                 <div class="form-group">
                     <input type="text" name="q" placeholder="Введите заголовок или текст поста..." class="search-input">
                     <button type="submit" class="btn-primary">Найти</button>
@@ -64,19 +64,19 @@
         </div>
 
         <!-- Уведомление если нет пользователей -->
-        {% if not has_users %}
+        <!-- {% if not has_users %}
         <div class="alert alert-warning">
             <h3>👋 Добро пожаловать!</h3>
             <p>Чтобы начать пользоваться блогом, сначала создайте пользователя:</p>
             <p><a href="/register" class="btn-primary">Создать первого пользователя</a></p>
         </div>
-        {% endif %}
+        {% endif %} -->
 
         <!-- Список постов -->
         {% if not posts %}
-            {% if has_users and current_user %}
+            {% if current_user %}
                 <p>Пока нет постов. <a href="/create-post">Создайте первый!</a></p>
-            {% elif has_users and not current_user %}
+            {% else %}
                 <p>Пока нет постов. <a href="/login">Войдите</a> чтобы создать первый пост!</p>
             {% endif %}
         {% else %}
@@ -102,12 +102,12 @@
         {% endif %}
     </div>
 
-    <script>
+    <!-- <script>
         function switchUser(userId) {
             if (userId) {
                 window.location.href = '/switch-user/' + userId;
             }
         }
-    </script>
+    </script> -->
 </body>
 </html>

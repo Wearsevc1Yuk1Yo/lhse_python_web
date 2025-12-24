@@ -1,21 +1,25 @@
 from typing import Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 
 class UserCreate(BaseModel):
     email: str
-    login: str
+    # вместо login username т.к. в бд username
+    login: str = Field(..., alias="username")
     password: str
 
+    class Config:
+        populate_by_name = True
+
     @validator("email")
-    def email_valid(cls, v):
+    def email_valid(cls, v: str) -> str:
         if "@" not in v or "." not in v:
             raise ValueError("Некорректный формат email")
         return v
 
     @validator("login")
-    def login_length(cls, v):
+    def username_length(cls, v: str) -> str:
         if len(v) < 2:
             raise ValueError("Логин должен содержать минимум 2 символа")
         return v
