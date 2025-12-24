@@ -175,17 +175,26 @@ async def init_db():
 @app.get("/")
 async def home_page(request: Request, q: Optional[str] = None):
     current_user = get_current_user(request)
+    search_query = request.query_params.get("q")
 
     posts_list = await PostService.get_all_posts(search_query=q)
+    favorites_count = 0
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "posts": posts_list,
-            "current_user": current_user,
-        },
-    )
+    if current_user:
+        try:
+            from services.favorites_service import FavoritesService
+            favorites = FavoritesService.get_user_favorites(current_user["id"])
+            favorites_count = len(favorites)
+        except Exception as e:
+            print(f"Ошибка подсчета избранного: {e}")
+            favorites_count = 0
+    
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "posts": posts_list, 
+        "current_user": current_user,
+        "favorites_count": favorites_count
+    })
 
 @app.get("/users")
 async def users_page(request: Request, q: Optional[str] = None):
@@ -497,6 +506,34 @@ async def favorites_page(request: Request):
     favorites = FavoritesService.get_user_favorites(current_user["id"])
     return templates.TemplateResponse("favorites.html", {
         "request": request, "favorites": favorites, "current_user": current_user
+    })
+
+@app.get("/create-post")
+async def create_post_page(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login?next=/create-post", status_code=303)
+    return templates.TemplateResponse("create_post.html", {
+        "request": request, "current_user": current_user
+    })
+
+@app.post("/create-post")
+async def create_post(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    form = await request.form()
+    title = form.get("title")
+    content = form.get("content")
+    
+    if title and content:
+        PostService.create_post(current_user["id"], title, content)
+        return RedirectResponse(url="/", status_code=303)
+    
+    return templates.TemplateResponse("create_post.html", {
+        "request": request, "current_user": current_user, 
+        "error": "Заполните все поля"
     })
 
 

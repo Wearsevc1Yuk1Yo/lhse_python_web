@@ -1,33 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Создание поста</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Создание поста</h1>
+{% extends "base.html" %}
+{% block title %}📝 Новый пост{% endblock %}
+{% block header %}📝 Создать новый пост{% endblock %}
 
-        <div class="post-info">
-            <p>Вы создаете пост как: <strong>{{ current_user.login }}</strong></p>
+{% block content %}
+<div class="form-container">
+    {% if error %}
+    <div class="alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Заголовок поста *</label>
+            <input type="text" name="title" placeholder="Введите заголовок..." 
+                   required maxlength="500" value="{{ request.form.title or '' }}">
         </div>
-
-        <form method="post" action="/create-post">
-            <div class="form-group">
-                <label>Заголовок:</label>
-                <input type="text" name="title" required placeholder="Введите заголовок поста">
-            </div>
-            <div class="form-group">
-                <label>Содержание:</label>
-                <textarea name="content" rows="10" required placeholder="Напишите содержание поста..."></textarea>
-            </div>
-            <button type="submit" class="btn-primary">Создать пост</button>
-        </form>
-
-        <div class="nav">
-            <a href="/">← На главную</a>
+        
+        <div class="form-group">
+            <label>Текст поста *</label>
+            <textarea name="content" rows="10" placeholder="Напишите текст поста..." 
+                      required>{{ request.form.content or '' }}</textarea>
         </div>
-    </div>
-</body>
-</html>
+        
+        <div style="display: flex; gap: 1rem; justify-content: space-between; align-items: center;">
+            <a href="/" class="btn" style="background: var(--secondary); color: var(--text-primary);">← Отмена</a>
+            <button type="submit" class="btn">📤 Опубликовать пост</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
