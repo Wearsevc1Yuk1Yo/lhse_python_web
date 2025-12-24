@@ -170,26 +170,6 @@ async def init_db():
         print(f"⚠️ Ошибка инициализации БД: {e}")
 
 
-# @app.on_event("startup")
-# async def init_db():
-#     try:
-#         # таблицы
-#         with open("hw2/database/ddl.sql", "r", encoding="utf-8") as f:
-#             ddl_sql = f.read()
-#         execute_query(ddl_sql)
-#         print("✅ Таблицы созданы")
-
-#         # Тестовые пользователи
-#         execute_query("""
-#             INSERT INTO users (email, username, password_hash)
-#             VALUES ('test@example.com', 'testuser', 'testpass')
-#             ON CONFLICT DO NOTHING
-#         """)
-#         print("✅ Тестовый пользователь: testuser/testpass")
-
-#     except Exception as e:
-#         print(f"⚠️ Ошибка инициализации БД: {e}")
-
 
 # HTML Routes
 @app.get("/")
@@ -206,6 +186,43 @@ async def home_page(request: Request, q: Optional[str] = None):
             "current_user": current_user,
         },
     )
+
+@app.get("/users")
+async def users_page(request: Request, q: Optional[str] = None):
+    """Страница поиска пользователей"""
+    current_user = get_current_user(request)
+    
+    if q:
+        users_result = execute_query("""
+            SELECT id, username, email, created_at 
+            FROM users 
+            WHERE username ILIKE %s OR email ILIKE %s
+            ORDER BY username ASC
+            LIMIT 50
+        """, (f"%{q}%", f"%{q}%"), fetch=True)
+    else:
+        # Все пользователи
+        users_result = execute_query("""
+            SELECT id, username, email, created_at 
+            FROM users 
+            ORDER BY username ASC
+        """, fetch=True)
+    
+    users = []
+    for user in users_result:
+        users.append({
+            "id": user[0],
+            "username": user[1],
+            "email": user[2],
+            "created_at": user[3].isoformat() if user[3] else None
+        })
+    
+    return templates.TemplateResponse("users.html", {
+        "request": request,
+        "users": users,
+        "current_user": current_user,
+        "search_query": q
+    })
 
 
 @app.get("/post/{post_id}")
