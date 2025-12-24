@@ -25,6 +25,12 @@
             {% else %}
             <a href="/login" style="color: #007bff;">Войдите чтобы лайкать</a>
             {% endif %}
+            {% if current_user %}
+            <button id="fav{{ post.id }}" onclick="toggleFavorite({{ post.id }})" 
+                style="padding: 8px 16px; background: {{ 'gold' if post.is_favorited else '#6c757d' }}; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                {% if post.is_favorited %}⭐ В избранном{% else %}⭐ Избранное{% endif %} ({{ post.favorites_count }})
+            </button>
+            {% endif %}
         </div>
 
         <div style="white-space: pre-line; margin: 20px 0;">{{ post.content }}</div>
@@ -105,6 +111,22 @@
             } finally {
                 button.disabled = false;
             }
+        }
+        </script>
+        <script>
+        async function toggleFavorite(postId) {
+            const btn = document.getElementById('fav' + postId);
+            btn.disabled = true;
+            btn.innerHTML = '⏳';
+            
+            const res = await fetch(`/api/favorites/${postId}/toggle`, {method: 'POST'});
+            const data = await res.json();
+            
+            btn.innerHTML = data.action === 'added' ? 
+                `⭐ В избранном (${data.favorites_count})` : 
+                `⭐ Избранное (${data.favorites_count})`;
+            btn.style.background = data.action === 'added' ? 'gold' : '#6c757d';
+            btn.disabled = false;
         }
         </script>
     

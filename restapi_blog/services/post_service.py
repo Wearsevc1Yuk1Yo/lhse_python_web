@@ -60,55 +60,6 @@ class PostService:
                 detail="Ошибка создания поста",
             )
 
-    # @staticmethod
-    # async def get_all_posts(skip: int = 0, limit: int = 10, search_query: str = None):
-    #     try:
-    #         if search_query:
-    #             # Поиск по заголовку и содержанию
-    #             query = (
-    #                 f"UPDATE posts SET {', '.join(update_fields)}, "
-    #                 f"updated_at = CURRENT_TIMESTAMP WHERE id = ${param_index} "
-    #                 "RETURNING id, user_id, title, content, created_at, updated_at"
-    #             )
-    #             search_term = f"%{search_query}%"
-    #             params = (search_term, search_term, limit, skip)
-    #         else:
-    #             query = """
-    #                 SELECT p.id, p.user_id, p.title,
-    #                 p.content, p.created_at, p.updated_at, u.username as author_name
-    #                 FROM posts p
-    #                 JOIN users u ON p.user_id = u.id
-    #                 ORDER BY p.created_at DESC
-    #                 LIMIT %s OFFSET %s
-    #             """
-    #             params = (limit, skip)
-
-    #         posts = execute_query(query, params, fetch=True)
-
-    #         result = []
-    #         for post in posts:
-    #             content_preview = (
-    #                 post[3][:100] + "..." if len(post[3]) > 100 else post[3]
-    #             )
-    #             result.append(
-    #                 {
-    #                     "id": post[0],
-    #                     "author_id": post[1],
-    #                     "title": post[2],
-    #                     "content_preview": content_preview,
-    #                     "created_at": post[4].isoformat(),
-    #                     "updated_at": post[5].isoformat(),
-    #                     "author_name": post[6],
-    #                 }
-    #             )
-
-    #         return result
-    #     except Exception as e:
-    #         print(f"Ошибка получения постов: {e}")
-    #         raise HTTPException(
-    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             detail="Ошибка получения постов",
-    #         )
     @staticmethod
     async def get_all_posts(skip: int = 0, limit: int = 10, search_query: str = None):
         try:
@@ -151,6 +102,8 @@ class PostService:
             print(f"Ошибка получения постов: {e}")
             raise HTTPException(status_code=500, detail="Ошибка получения постов")
 
+
+    # глав цаца все изменения сюда
     @staticmethod
     async def get_post(post_id: int, current_user_id: int = None):
         post = execute_query(
@@ -188,6 +141,16 @@ class PostService:
         if current_user_id:
             is_liked = LikeService.is_user_liked_post(current_user_id, post_id)  
         
+        favorites_count = 0
+        is_favorited = False
+        try:
+            from services.favorites_service import FavoritesService
+            favorites_count = FavoritesService.get_post_count(post_id)
+            if current_user_id:
+                is_favorited = FavoritesService.is_favorited(current_user_id, post_id)
+        except:
+            pass
+        
         return {
             "id": post[0],
             "author_id": post[1],
@@ -199,6 +162,8 @@ class PostService:
             "author_name": post[7],
             "likes_count": likes_count,
             "is_liked": is_liked,
+            "favorites_count": favorites_count,
+            "is_favorited": is_favorited,
             "comments": comments,
         }
 

@@ -310,17 +310,7 @@ async def handle_edit_post(
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
 
-    # Проверяем, что пользователь является автором поста
-    # if post_id in posts_db and posts_db[post_id].author_id != current_user["id"]:
-    #     return templates.TemplateResponse(
-    #         "error.html",
-    #         {
-    #             "request": request,
-    #             "title": "Ошибка доступа",
-    #             "message": "Вы можете редактировать только свои посты",
-    #         },
-    #         status_code=403,
-    #     )
+    
     post_data = PostUpdate(title=title, content=content)
     await PostService.update_post(
         post_id, post_data, current_user_id=current_user["id"]
@@ -360,16 +350,6 @@ async def handle_register(request: Request):
             status_code=400,
         )
 
-    # except HTTPException:
-    #     raise
-
-    # except Exception as e:
-    #     print(f"Регистрация ошибка: {e}")
-    #     return templates.TemplateResponse(
-    #         "register.html",
-    #         {"request": request, "error": "Ошибка сервера"},
-    #         status_code=500,
-    #     )
 
 
 @app.get("/login")
@@ -445,12 +425,6 @@ async def logout(request: Request):
     return RedirectResponse(url="/", status_code=303)
 
 
-# @app.get("/switch-user/{user_id}")
-# async def switch_user(request: Request, user_id: int):
-#     if user_id in users_db:
-#         request.session["user_id"] = user_id
-#     return RedirectResponse(url="/", status_code=303)
-
 
 @app.get("/delete-post/{post_id}")
 async def delete_post_page(request: Request, post_id: int):
@@ -459,17 +433,7 @@ async def delete_post_page(request: Request, post_id: int):
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
 
-    # Проверяем, что пользователь является автором поста
-    # if post_id in posts_db and posts_db[post_id].author_id != current_user["id"]:
-    #     return templates.TemplateResponse(
-    #         "error.html",
-    #         {
-    #             "request": request,
-    #             "title": "Ошибка доступа",
-    #             "message": "Вы можете удалять только свои посты",
-    #         },
-    #         status_code=403,
-    #     )
+
 
     await PostService.delete_post(post_id, current_user_id=current_user["id"])
     return RedirectResponse(url="/", status_code=303)
@@ -513,6 +477,27 @@ async def add_comment(
         print(traceback.format_exc())
 
     return RedirectResponse(url=f"/post/{post_id}", status_code=303)
+
+
+@app.post("/api/favorites/{post_id}/toggle")
+async def api_toggle_favorite(post_id: int, request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return {"error": "Авторизуйтесь"}
+    from services.favorites_service import FavoritesService
+    return FavoritesService.toggle_favorite(user_id, post_id)
+
+
+@app.get("/favorites")
+async def favorites_page(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    from services.favorites_service import FavoritesService
+    favorites = FavoritesService.get_user_favorites(current_user["id"])
+    return templates.TemplateResponse("favorites.html", {
+        "request": request, "favorites": favorites, "current_user": current_user
+    })
 
 
 if __name__ == "__main__":
