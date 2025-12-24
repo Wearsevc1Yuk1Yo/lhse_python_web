@@ -3,6 +3,7 @@
 from core.database import execute_query
 from fastapi import HTTPException, status
 from schemas.post import PostCreate, PostUpdate
+from services.like_service import LikeService
 
 
 class PostService:
@@ -151,7 +152,7 @@ class PostService:
             raise HTTPException(status_code=500, detail="Ошибка получения постов")
 
     @staticmethod
-    async def get_post(post_id: int):
+    async def get_post(post_id: int, current_user_id: int = None):
         post = execute_query(
             """
             SELECT p.id, p.user_id, p.title, p.content, p.is_published,
@@ -182,6 +183,11 @@ class PostService:
             fetch=True,
         )
 
+        likes_count = LikeService.get_post_likes_count(post_id)
+        is_liked = False  
+        if current_user_id:
+            is_liked = LikeService.is_user_liked_post(current_user_id, post_id)  
+        
         return {
             "id": post[0],
             "author_id": post[1],
@@ -191,6 +197,8 @@ class PostService:
             "created_at": post[5],
             "updated_at": post[6],
             "author_name": post[7],
+            "likes_count": likes_count,
+            "is_liked": is_liked,
             "comments": comments,
         }
 

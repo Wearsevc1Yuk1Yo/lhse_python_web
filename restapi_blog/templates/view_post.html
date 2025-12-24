@@ -9,6 +9,24 @@
         <p><strong>Автор:</strong> {{ post.author_name }}</p>
         <p><strong>Создан:</strong> {{ post.created_at }}</p>
         <p><strong>Обновлен:</strong> {{ post.updated_at }}</p>
+        
+        <div class="post-likes" style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+            <span style="font-size: 18px; margin-right: 15px;">❤️ {{ post.likes_count or 0 }} лайков</span>
+            {% if current_user %}
+            <button id="likeBtn{{ post.id }}" 
+                    class="like-button btn-primary" 
+                    onclick="toggleLike({{ post.id }})">
+                {% if post.is_liked %}
+                    ❤️ Уже лайкнуто
+                {% else %}
+                    👍 Полайкать
+                {% endif %}
+            </button>
+            {% else %}
+            <a href="/login" style="color: #007bff;">Войдите чтобы лайкать</a>
+            {% endif %}
+        </div>
+
         <div style="white-space: pre-line; margin: 20px 0;">{{ post.content }}</div>
     </div>
 
@@ -51,5 +69,45 @@
         <a href="/">← На главную</a> |
         <a href="/edit-post/{{ post.id }}">✏️ Редактировать</a> |
         <a href="/delete-post/{{ post.id }}" onclick="return confirm('Удалить этот пост?')">🗑 Удалить</a>
+        <script>
+        async function toggleLike(postId) {
+            const button = document.getElementById('likeBtn' + postId);
+            const likesSpan = button.parentElement.querySelector('span');
+            const originalText = button.innerHTML;
+            
+            button.disabled = true;
+            button.innerHTML = '⏳ ...';
+            
+            try {
+                const response = await fetch(`/api/likes/posts/${postId}/toggle`, {
+                    method: 'POST',
+                    credentials: 'include'  // Для session cookies
+                });
+                
+                const data = await response.json();
+                
+                // Обновляем счетчик
+                likesSpan.textContent = `❤️ ${data.likes_count} `;
+                
+                // Обновляем кнопку
+                if (data.action === 'added') {
+                    button.innerHTML = '❤️ лайкнуто';
+                    button.className = 'like-button btn-success';
+                } else {
+                    button.innerHTML = '👍 лайкнуть';
+                    button.className = 'like-button btn-primary';
+                }
+                
+            } catch (error) {
+                console.error('Ошибка лайка:', error);
+                alert('❌ Ошибка лайка');
+                button.innerHTML = originalText;
+            } finally {
+                button.disabled = false;
+            }
+        }
+        </script>
+    
     </div>
+
 {% endblock %}

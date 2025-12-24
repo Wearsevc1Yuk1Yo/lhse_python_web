@@ -23,6 +23,7 @@ from schemas.user import UserCreate
 from services.comment_service import CommentService
 from services.post_service import PostService
 from services.user_service import UserService
+from routers.likes import router as likes_router
 from utils.storage import load_data
 
 app = FastAPI(title="Simple Blog API")
@@ -39,6 +40,7 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(users_router)
 app.include_router(posts_router)
 app.include_router(auth_router)
+app.include_router(likes_router)
 
 app.add_exception_handler(404, not_found_handler)
 app.add_exception_handler(400, bad_request_handler)

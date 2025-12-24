@@ -414,3 +414,61 @@ button:hover {
     border-left: 1px dashed #ddd;
     padding-left: 15px;
 }
+
+.post-likes {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border-left: 5px solid #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.like-button {
+    padding: 10px 20px !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.like-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.btn-success {
+    background: #28a745 !important;
+    color: white !important;
+}
+
+.btn-success:hover {
+    background: #218838 !important;
+    color: white !important;
+}
+
+.btn-primary {
+    background: #007bff !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background: #0056b3 !important;
+    color: white !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .post-likes {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
