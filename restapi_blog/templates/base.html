@@ -4,31 +4,34 @@
     <title>{% block title %}Мой Блог{% endblock %}</title>
     <meta charset="UTF-8">
     <style>
+        /* 🎨 ПАСТЕЛЬНАЯ ПАЛИТРА */
         :root {
-            --primary: #4f9fe8;
-            --primary-light: #a3cfff;
-            --secondary: #e8ecf1;
-            --accent: #f8fafc;
-            --text-primary: #334155;
-            --text-secondary: #64748b;
-            --danger: #f87171;
-            --success: #10b981;
-            --warning: #fbbf24;
+            --primary: #4f9fe8;      /* Пастельно-голубой */
+            --primary-light: #a3cfff; /* Светло-голубой */
+            --secondary: #e8ecf1;     /* Пастельно-серый */
+            --accent: #f8fafc;        /* Фон */
+            --text-primary: #334155;  /* Основной текст */
+            --text-secondary: #64748b;/* Вторичный текст */
+            --success: #10b981;       /* Зеленый */
+            --warning: #f59e0b;       /* Желтый избранное */
+            --danger: #ef4444;        /* Красный */
             --shadow: 0 4px 20px rgba(0,0,0,0.08);
             --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #f0f6ff 0%, #e8f1ff 100%);
-            min-height: 100vh;
+            font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--accent) 0%, #f1f5f9 100%);
             color: var(--text-primary);
             line-height: 1.6;
             padding: 2rem;
+            margin: 0;
+            min-height: 100vh;
         }
 
+        /* 🏠 ШАПКА */
         h1 {
             font-size: 2.5rem;
             font-weight: 700;
@@ -38,44 +41,124 @@
             background-clip: text;
             margin-bottom: 2rem;
             text-align: center;
+            letter-spacing: -0.02em;
         }
 
-        /* ✅ НАВИГАЦИЯ - БЕЗОПАСНАЯ */
-        .nav {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 3rem;
-            box-shadow: var(--shadow);
+        /* 🔗 НАВИГАЦИЯ */
+        .nav-buttons {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
             justify-content: center;
-            align-items: center;
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
         }
 
-        .nav a, .nav span {
-            padding: 0.75rem 1.5rem;
+        .nav-btn, .nav-btn span {
+            padding: 0.8rem 1.8rem;
             border-radius: 50px;
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
-            margin: 0.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
         }
 
-        .nav a:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
 
-        .nav a[href="/"] { background: var(--primary); color: white; }
-        .nav a[href="/users"] { background: var(--primary-light); color: var(--text-primary); }
-        .nav a[href="/favorites"] { background: var(--warning); color: white; }
-        .nav .user-info { color: var(--text-secondary); font-weight: 600; }
-        .nav a[href="/login"] { background: var(--secondary); color: var(--text-primary); }
-        .nav a[href="/register"] { background: var(--success); color: white; }
-        .nav a[href="/logout"] { background: var(--danger); color: white; }
+        /* ЦВЕТА КНОПОК */
+        .nav-btn[href="/"] { background: var(--primary); color: white; }
+        .nav-btn[href="/create-post"] { background: var(--success); color: white; }
+        .nav-btn[href="/profile"] { background: var(--primary-light); color: var(--text-primary); }
+        .nav-btn[href="/favorites"] { background: linear-gradient(135deg, var(--warning), #fbbf24); color: white; }
+        .nav-btn[href="/users"] { background: var(--secondary); color: var(--text-primary); }
+        .nav-btn[href="/login"] { background: var(--secondary); color: var(--text-primary); }
+        .nav-btn[href="/register"] { background: var(--success); color: white; }
+        .nav-btn[href="/logout"] { background: var(--danger); color: white; }
+        
+        .user-info { 
+            background: none; 
+            color: var(--text-secondary); 
+            padding: 0.8rem 1.2rem; 
+            font-weight: 600; 
+        }
 
+        /* 📝 ФОРМЫ */
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            background: rgba(255,255,255,0.95);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus, 
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79,159,232,0.1);
+        }
+
+        /* 🔘 КНОПКИ */
+        button, .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem;
+        }
+
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* 📄 ПОСТЫ */
         .post {
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             border-radius: 20px;
             padding: 2.5rem;
             margin-bottom: 2rem;
@@ -84,7 +167,10 @@
             transition: all 0.3s ease;
         }
 
-        .post:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+        .post:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
 
         .posts-grid {
             display: grid;
@@ -93,97 +179,87 @@
             margin-top: 2rem;
         }
 
-        .form-container, .search-form {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(255,255,255,0.9);
-            padding: 3rem;
-            border-radius: 24px;
-            box-shadow: var(--shadow);
+        /* 📊 СТАТИСТИКА */
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .form-group { margin-bottom: 2rem; }
-        .form-group label { 
-            display: block; margin-bottom: 0.75rem; 
-            font-weight: 600; color: var(--text-primary); 
-        }
-        .form-group input, .form-group textarea {
-            width: 100%; padding: 1rem 1.25rem; 
-            border: 2px solid #e2e8f0; border-radius: 12px; 
-            font-size: 1rem; background: white;
-            transition: border-color 0.3s ease;
-        }
-        .form-group input:focus, .form-group textarea:focus {
-            outline: none; border-color: var(--primary); 
-            box-shadow: 0 0 0 3px rgba(79,159,232,0.1);
+        .stat-item {
+            background: rgba(255,255,255,0.8);
+            padding: 1.5rem 2rem;
+            border-radius: 20px;
+            text-align: center;
+            min-width: 140px;
+            border: 1px solid rgba(226,232,240,0.5);
+            transition: all 0.3s ease;
         }
 
-        button, .btn {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white; border: none; 
-            padding: 1rem 2rem; border-radius: 12px;
-            font-weight: 600; cursor: pointer;
-            transition: all 0.3s ease; box-shadow: var(--shadow);
-            text-decoration: none; display: inline-flex;
-            align-items: center; gap: 0.5rem; margin: 0.5rem;
+        .stat-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
         }
 
-        button:hover, .btn:hover {
-            transform: translateY(-2px); box-shadow: var(--shadow-hover);
-        }
-
+        /* 🔔 АЛЕРТЫ */
         .alert-error {
             background: linear-gradient(135deg, #fee2e2, #fecaca);
-            color: #dc2626; padding: 1.5rem 2rem;
-            border-radius: 16px; margin-bottom: 2rem;
+            color: #dc2626;
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
             border-left: 5px solid var(--danger);
         }
 
         .alert-success {
             background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-            color: #166534; padding: 1.5rem 2rem;
-            border-radius: 16px; margin-bottom: 2rem;
+            color: #166534;
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
             border-left: 5px solid var(--success);
+            text-align: center;
         }
 
-        .stats {
-            display: flex; gap: 1.5rem; margin: 2rem 0;
-            justify-content: center; flex-wrap: wrap;
+        /* 🔍 ПОИСК */
+        .search-form {
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            background: rgba(255,255,255,0.95);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
         }
 
-        .stat-item {
-            background: rgba(255,255,255,0.8);
-            padding: 1.5rem 2rem; border-radius: 20px;
-            text-align: center; min-width: 140px;
-            border: 1px solid rgba(226,232,240,0.5);
-        }
-
+        /* 📱 РЕСПОНСИВ */
         @media (max-width: 768px) {
             body { padding: 1rem; }
             h1 { font-size: 2rem; }
-            .nav { flex-direction: column; gap: 0.75rem; }
+            .nav-buttons { flex-direction: column; gap: 0.75rem; }
             .posts-grid { grid-template-columns: 1fr; }
+            .form-container { padding: 2rem 1.5rem; margin: 0 1rem; }
         }
     </style>
 </head>
 <body>
     <h1>{% block header %}Мой Блог{% endblock %}</h1>
     
-    <nav class="nav">
-        <a href="/">🏠 Главная</a>
+    <div class="nav-buttons">
+        <a href="/" class="nav-btn">🏠 Главная</a>
         {% if current_user %}
-        <a href="/create-post" style="background: var(--success); color: white;">✨ Новый пост</a>
-        {% endif %}
-        <a href="/users">👥 Пользователи</a>
-        {% if current_user %}
-            <a href="/favorites">⭐ Избранное</a>
+            <a href="/create-post" class="nav-btn">✨ Новый пост</a>
+            <a href="/profile" class="nav-btn">👤 Профиль</a>
+            <a href="/favorites" class="nav-btn">⭐ Избранное</a>
             <span class="user-info">👤 {{ current_user.login }}</span>
-            <a href="/logout">🚪 Выход</a>
+            <a href="/logout" class="nav-btn">🚪 Выход</a>
         {% else %}
-            <a href="/login">🔐 Вход</a>
-            <a href="/register">📝 Регистрация</a>
+            <a href="/login" class="nav-btn">🔐 Вход</a>
+            <a href="/register" class="nav-btn">📝 Регистрация</a>
         {% endif %}
-    </nav>
+        <a href="/users" class="nav-btn">👥 Пользователи</a>
+    </div>
     
     {% block content %}{% endblock %}
 </body>

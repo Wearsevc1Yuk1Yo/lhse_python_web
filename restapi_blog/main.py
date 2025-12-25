@@ -157,13 +157,22 @@ async def init_db():
         print("✅ Таблицы созданы")
 
         # тест пользователь
-        execute_query(
-            """
-            INSERT INTO users (email, username, password_hash)
-            VALUES ('test@example.com', 'testuser', 'testpass')
-            ON CONFLICT DO NOTHING
-        """
-        )
+        # execute_query(
+        #     """
+        #     INSERT INTO users (email, username, password_hash)
+        #     VALUES ('test@example.com', 'testuser', 'testpass')
+        #     ON CONFLICT DO NOTHING
+        # """
+        # )
+
+        execute_query("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS age INTEGER,
+            ADD COLUMN IF NOT EXISTS hobbies TEXT,
+            ADD COLUMN IF NOT EXISTS bio TEXT,
+            ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)
+        """)
+
         print("✅ Тестовый пользователь создан")
 
     except Exception as e:
@@ -535,6 +544,85 @@ async def create_post(request: Request):
         "request": request, "current_user": current_user, 
         "error": "Заполните все поля"
     })
+
+
+@app.get("/profile")
+async def profile_page(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login?next=/profile", status_code=303)
+    
+    profile = {
+        "id": current_user["id"],
+        "username": current_user.get("login", ""),
+        "email": current_user.get("email", ""),
+        "age": request.session.get("profile_age"),
+        "hobbies": request.session.get("profile_hobbies", ""),
+        "bio": request.session.get("profile_bio", ""),
+        "avatar_url": request.session.get("profile_avatar_url", ""),
+        "created_at": current_user.get("created_at", "").strftime("%Y-%m-%d") if current_user.get("created_at") else ""
+    }
+    
+    return templates.TemplateResponse("profile.html", {
+        "request": request, "current_user": current_user, "profile": profile
+    })
+
+
+@app.post("/profile")
+async def update_profile(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    form = await request.form()
+    age = form.get("age")
+    hobbies = form.get("hobbies")
+    bio = form.get("bio")
+    avatar_url = form.get("avatar_url")
+    
+    from services.profile_service import ProfileService
+    age_int = int(age) if age else None
+    
+    success = ProfileService.update_profile(
+        current_user["id"], age_int, hobbies, bio, avatar_url
+    )
+    
+    if success:
+        return RedirectResponse(url="/profile?success=true", status_code=303)
+    else:
+        return templates.TemplateResponse("profile.html", {
+            "request": request, "current_user": current_user,
+            "profile": ProfileService.get_profile(current_user["id"]),
+            "error": "Ошибка обновления"
+        })
+
+
+@app.get("/profile/edit")
+async def profile_edit(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login?next=/profile/edit", status_code=303)
+    
+    return templates.TemplateResponse("profile_edit.html", {
+        "request": request, "current_user": current_user
+    })
+
+@app.post("/profile/edit")
+async def save_profile_edit(request: Request):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    form = await request.form()
+    age = form.get("age")
+    hobbies = form.get("hobbies")
+    bio = form.get("bio")
+    
+    request.session["profile_age"] = age
+    request.session["profile_hobbies"] = hobbies
+    request.session["profile_bio"] = bio
+    
+    return RedirectResponse(url="/profile?saved=true", status_code=303)
 
 
 if __name__ == "__main__":

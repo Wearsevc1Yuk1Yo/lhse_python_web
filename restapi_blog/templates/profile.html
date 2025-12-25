@@ -1,54 +1,94 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Профиль пользователя</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>Мой профиль</h1>
-            <div class="user-panel">
-                <div class="user-info">
-                    <span>Вы вошли как: <strong>{{ current_user.login }}</strong></span>
-                    <div class="user-actions">
-                        <a href="/logout" class="btn-secondary">Выйти</a>
-                    </div>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
+{% block title %}👤 Профиль - {{ current_user.login }}{% endblock %}
+{% block header %}👤 Профиль {{ current_user.login }}{% endblock %}
 
-        <div class="profile-container">
-            <div class="profile-info">
-                <h2>Информация о пользователе</h2>
-                <div class="form-group">
-                    <label>Логин:</label>
-                    <p>{{ current_user.login }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <p>{{ current_user.email }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Дата регистрации:</label>
-                    <p>{{ current_user.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                </div>
-            </div>
+{% block content %}
+<!-- 🎨 ГЛАВНЫЙ КОНТЕЙНЕР -->
+<div style="max-width: 900px; margin: 0 auto;">
+    
+    <!-- ✅ УВЕДОМЛЕНИЯ -->
+    {% if request.query_params.saved %}
+    <div class="alert-success" style="margin-bottom: 2rem;">
+        ✅ Профиль успешно обновлен!
+    </div>
+    {% endif %}
 
-            <div class="profile-actions">
-                <h2>Действия</h2>
-                <div class="action-buttons">
-                    <a href="/profile/edit" class="btn-primary">Редактировать профиль</a>
-                    <a href="/favorites" class="btn-primary">Избранные посты</a>
-                    <a href="/subscriptions" class="btn-primary">Подписки</a>
-                </div>
-            </div>
+    <!-- 🎭 АВАТАР + ОСНОВНАЯ ИНФО -->
+    <div class="post" style="text-align: center; padding: 3rem 2rem; margin-bottom: 2rem;">
+        <!-- АВАТАР -->
+        <div style="width: 140px; height: 140px; border-radius: 50%; 
+                    background: linear-gradient(135deg, var(--primary), var(--primary-light)); 
+                    margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center;
+                    font-size: 3.5rem; color: white; box-shadow: var(--shadow-hover);">
+            👤
         </div>
-
-        <div class="nav">
-            <a href="/" class="btn-secondary">← На главную</a>
+        
+        <!-- ИМЯ -->
+        <h2 style="color: var(--text-primary); margin: 0 0 0.5rem 0; font-size: 2.2rem;">
+            {{ current_user.login }}
+        </h2>
+        
+        <!-- СТАТУС -->
+        <div style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 2rem;">
+            Зарегистрирован {{ profile.created_at or 'недавно' }}
         </div>
     </div>
-</body>
-</html>
+
+    <!-- 📊 ДАННЫЕ ПРОФИЛЯ + ДЕЙСТВИЯ (ГРИД) -->
+    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 3rem; margin-bottom: 3rem;">
+        
+        <!-- 👤 ИНФОРМАЦИЯ -->
+        <div class="post">
+            <h3 style="color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                📋 Информация
+            </h3>
+            
+            <div class="form-group">
+                <label style="color: var(--text-secondary);">Логин</label>
+                <p style="font-weight: 600; font-size: 1.1rem; margin: 0;">{{ current_user.login }}</p>
+            </div>
+            
+            <div class="form-group">
+                <label style="color: var(--text-secondary);">Email</label>
+                <p style="color: var(--text-primary); margin: 0;">{{ current_user.email }}</p>
+            </div>
+            
+            <div class="form-group">
+                <label style="color: var(--text-secondary);">Возраст</label>
+                <p style="color: var(--text-primary); margin: 0;">{{ request.session.get('profile_age', 'Не указан') }}</p>
+            </div>
+            
+            <div class="form-group">
+                <label style="color: var(--text-secondary);">Хобби</label>
+                <p style="color: var(--text-primary); margin: 0;">{{ request.session.get('profile_hobbies', 'Не указаны') }}</p>
+            </div>
+            
+            <div class="form-group">
+                <label style="color: var(--text-secondary);">О себе</label>
+                <p style="color: var(--text-primary); line-height: 1.6; margin: 0;">{{ request.session.get('profile_bio', 'Не указано') }}</p>
+            </div>
+        </div>
+
+        <!-- 🎛️ ДЕЙСТВИЯ -->
+        <div class="post">
+            <h3 style="color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                ⚡ Быстрые действия
+            </h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <a href="/profile/edit" class="btn" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); width: 100%; text-align: center; justify-content: center;">
+                    ✏️ Редактировать профиль
+                </a>
+                
+                <a href="/favorites" class="btn" style="background: linear-gradient(135deg, var(--warning), #fbbf24); width: 100%; text-align: center; justify-content: center;">
+                    ⭐ Избранное
+                </a>
+                
+                <a href="/" class="btn" style="background: var(--secondary); color: var(--text-primary); width: 100%; text-align: center; justify-content: center;">
+                    🏠 На главную
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
