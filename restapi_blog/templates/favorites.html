@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Избранное{% endblock %}
+{% block header %}⭐ Избранное{% endblock %}
+
+{% block content %}
+{% if current_user %}
+{% if favorites %}
+    {% for post in favorites %}
+    <div class="post" style="border-left: 4px solid gold;">
+        <h4><a href="/post/{{ post.id }}">{{ post.title }}</a></h4>
+        <p>{{ post.content }}</p>
+        <small>{{ post.author_name }} | {{ post.created_at[:10] }}</small>
+    </div>
+    {% endfor %}
+{% else %}
+    <p>Избранное пусто. <a href="/">Найти посты</a></p>
+{% endif %}
+{% else %}
+    <p><a href="/login">Войдите</a> для просмотра избранного</p>
+{% endif %}
+{% endblock %}

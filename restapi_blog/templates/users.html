@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Пользователи - Поиск{% endblock %}
+{% block header %}{% if search_query %}🔍 {{ search_query }}{% else %}👥 Все пользователи{% endif %}{% endblock %}
+
+{% block content %}
+<!-- ФОРМА ПОИСКА -->
+<div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <form method="GET" style="display: flex; gap: 10px;">
+        <input type="text" name="q" placeholder="Поиск по логину или email..." 
+               value="{{ search_query or '' }}" 
+               style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+        <button type="submit" style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            🔍 Найти
+        </button>
+        <a href="/users" style="padding: 12px 24px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
+            Все пользователи
+        </a>
+    </form>
+</div>
+
+<!-- СПИСОК ПОЛЬЗОВАТЕЛЕЙ -->
+{% if users %}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+    {% for user in users %}
+    <div style="border: 1px solid #dee2e6; padding: 20px; border-radius: 10px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 10px 0; color: #007bff;">{{ user.username }}</h3>
+        <p style="margin: 5px 0; color: #666;"><strong>Email:</strong> {{ user.email }}</p>
+        <p style="margin: 5px 0; color: #666;"><strong>ID:</strong> #{{ user.id }}</p>
+        {% if user.created_at %}
+        <p style="margin: 5px 0; color: #999; font-size: 0.9em;">
+            Зарегистрирован: {{ user.created_at[:10] }}
+        </p>
+        {% endif %}
+        <a href="/" style="margin-top: 10px; display: inline-block; padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 0.9em;">
+            → Посты этого пользователя (скоро)
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 40px; color: #666;">
+    <h2>👥 Пользователи не найдены</h2>
+    <p>Попробуйте другое имя или email</p>
+    <a href="/users" style="padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Показать всех</a>
+</div>
+{% endif %}
+
+<div style="margin-top: 30px;">
+    <a href="/" style="padding: 12px 24px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">← На главную</a>
+</div>
+{% endblock %}

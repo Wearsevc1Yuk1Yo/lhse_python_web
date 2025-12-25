@@ -1,0 +1,48 @@
+{
+  "users": {
+    "1": {
+      "id": 1,
+      "email": "eeeeee@mail.ru",
+      "login": "hse_lyc2425-cpp-20",
+      "password": "sdghjkl",
+      "created_at": "2025-10-16T01:37:51.653475",
+      "updated_at": "2025-10-16T01:37:51.653507"
+    },
+    "2": {
+      "id": 2,
+      "email": "rtb@eu.ieyr",
+      "login": "fffff",
+      "password": "fff",
+      "created_at": "2025-10-16T02:13:09.550812",
+      "updated_at": "2025-10-16T02:13:09.550816"
+    }
+  },
+  "posts": {
+    "1": {
+      "id": 1,
+      "author_id": 1,
+      "title": "hdh",
+      "content": "bcbdfbdfbыФЫРРО",
+      "created_at": "2025-10-16T01:38:00.751314",
+      "updated_at": "2025-10-16T01:40:04.795227"
+    },
+    "2": {
+      "id": 2,
+      "author_id": 1,
+      "title": "ЫВПР",
+      "content": "ВАПРОЛБЮ.",
+      "created_at": "2025-10-16T01:40:18.418011",
+      "updated_at": "2025-10-16T01:40:18.418016"
+    },
+    "3": {
+      "id": 3,
+      "author_id": 2,
+      "title": "sdghnjmk./",
+      "content": "dsfdgnhmj,,.",
+      "created_at": "2025-10-16T02:13:16.637645",
+      "updated_at": "2025-10-16T02:13:16.637649"
+    }
+  },
+  "next_user_id": 1,
+  "next_post_id": 1
+}

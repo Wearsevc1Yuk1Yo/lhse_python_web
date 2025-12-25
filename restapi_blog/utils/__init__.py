@@ -1,3 +1,5 @@
-from .storage import save_data, load_data, get_data_stats
+from .storage import get_data_stats, load_data
 
-__all__ = ['save_data', 'load_data', 'get_data_stats']
+__all__ = ["load_data", "get_data_stats"]
+
+# save data убран

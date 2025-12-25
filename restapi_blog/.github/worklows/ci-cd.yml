@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: blog_user
+          POSTGRES_PASSWORD: blog_password
+          POSTGRES_DB: test_blog_db
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r hw2/quality/requirements.txt
+
+    - name: Run code quality checks
+      run: |
+        black . --check
+        isort . --check-only
+        flake8 .
+
+    - name: Run tests
+      env:
+        DATABASE_URL: postgresql://blog_user:blog_password@localhost:5432/test_blog_db
+      run: |
+        pytest --cov=. --cov-fail-under=25
+
+    - name: Build Docker image
+      if: github.ref == 'refs/heads/main'
+      run: |
+        docker build -t blog-api .

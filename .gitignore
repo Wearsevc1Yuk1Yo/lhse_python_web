@@ -1,0 +1,32 @@
+# Виртуальные окружения
+fastapi-project/
+task_to_14_09_2026/
+venv/
+.venv/
+env/
+
+# Python файлы
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Другие файлы
+*.log
+*.tmp
+*.bak

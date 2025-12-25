@@ -1,93 +1,318 @@
-from fastapi import HTTPException
 from datetime import datetime
-from models.user import User, users_db
+
+from core.database import execute_query
+from fastapi import HTTPException, status
+from passlib.context import CryptContext
 from schemas.user import UserCreate, UserUpdate
-from utils.storage import save_data
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 class UserService:
     @staticmethod
+    def get_password_hash(password: str) -> str:
+        try:
+            return pwd_context.hash(password)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пароль слишком длинный или содержит слишком сложные символы, сократите его до 72 байт.",
+            ) from e
+
+    @staticmethod
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        # Для совместимости с существующими данными, где пароли не хешированы
+        if hashed_password == plain_password:
+            return True
+        return pwd_context.verify(plain_password, hashed_password)
+
+    @staticmethod
     async def create_user(user_data: UserCreate):
+        print(f"🔧 Создание: email={user_data.email}, login={user_data.login}")
+
         # Проверка уникальности email
-        for user in users_db.values():
-            if user.email == user_data.email:
-                raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
-        
-        new_user = User(user_data.email, user_data.login, user_data.password)
-        users_db[new_user.id] = new_user
-        save_data()
-        
-        return {
-            "id": new_user.id,
-            "email": new_user.email,
-            "login": new_user.login,
-            "created_at": new_user.created_at.isoformat(),
-            "updated_at": new_user.updated_at.isoformat()
-        }
+        existing_user = execute_query(
+            "SELECT id FROM users WHERE email = %s OR username = %s",
+            (user_data.email, user_data.login),
+            fetch=True,
+        )
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пользователь с таким email уже существует",
+            )
+        hashed_password = UserService.get_password_hash(user_data.password)
+        result = execute_query(
+            """
+            INSERT INTO users (email, username, password_hash, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
+            RETURNING id, email, username
+            """,
+            (user_data.email, user_data.login, hashed_password),
+            fetch=True,
+        )
+        print(f"🔥 INSERT результат: {result}")
+
+        # Проверка уникальности логина
+        # existing_user = execute_query(
+        #     "SELECT id FROM users WHERE username = %s",
+        # (user_data.login,), fetch=True
+        # )
+
+        # if existing_user:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail="Пользователь с таким логином уже существует",
+        #     )
+
+        # hashed_password = UserService.get_password_hash(user_data.password)
+        if not result:
+            raise HTTPException(500, "Не удалось создать пользователя")
+
+        user = result[0]
+        new_user = {"id": user[0], "email": user[1], "login": user[2]}
+        print(f"✅ СОЗДАН: ID={new_user['id']} ({new_user['login']})")
+
+        return new_user
+
+        # try:
+        #     result = execute_query(
+        #         """
+        #         INSERT INTO users (email, username, password_hash)
+        #         VALUES (%s, %s, %s)
+        #         RETURNING id, email, username, created_at, updated_at
+        #     """,
+        #         (user_data.email, user_data.login, hashed_password),
+        #         fetch=True,
+        #     )
+
+        #     user = result[0]
+        #     return {
+        #         "id": user[0],
+        #         "email": user[1],
+        #         "login": user[2],
+        #         "created_at": user[3].isoformat(),
+        #         "updated_at": user[4].isoformat(),
+        #     }
+        # except Exception as e:
+        #     print(f"Ошибка создания пользователя: {e}")
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="Ошибка создания пользователя",
+        #     )
 
     @staticmethod
     async def get_all_users():
-        return [
-            {
-                "id": user.id,
-                "email": user.email,
-                "login": user.login,
-                "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat()
-            }
-            for user in users_db.values()
-        ]
+        try:
+            users = execute_query(
+                """
+                SELECT id, email, username, created_at, updated_at
+                FROM users
+                ORDER BY created_at DESC
+            """,
+                fetch=True,
+            )
+
+            return [
+                {
+                    "id": user[0],
+                    "email": user[1],
+                    "login": user[2],
+                    "created_at": user[3].isoformat()
+                    if user[3]
+                    else datetime.now().isoformat(),
+                    "updated_at": user[4].isoformat()
+                    if user[4]
+                    else datetime.now().isoformat(),
+                }
+                for user in users
+            ]
+        except Exception as e:
+            print(f"Ошибка получения пользователей: {e}")
+            return []
 
     @staticmethod
     async def get_user(user_id: int):
-        if user_id not in users_db:
-            raise HTTPException(status_code=404, detail="Пользователь не найден")
-        
-        user = users_db[user_id]
-        return {
-            "id": user.id,
-            "email": user.email,
-            "login": user.login,
-            "created_at": user.created_at.isoformat(),
-            "updated_at": user.updated_at.isoformat()
-        }
+        try:
+            user = execute_query(
+                """
+                SELECT id, email, username, created_at, updated_at
+                FROM users
+                WHERE id = %s
+            """,
+                (user_id,),
+                fetch=True,
+            )
+
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден",
+                )
+
+            user = user[0]
+            return {
+                "id": user[0],
+                "email": user[1],
+                "login": user[2],
+                "created_at": user[3].isoformat()
+                if user[3]
+                else datetime.now().isoformat(),
+                "updated_at": user[4].isoformat()
+                if user[4]
+                else datetime.now().isoformat(),
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Ошибка получения пользователя: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка получения пользователя",
+            )
 
     @staticmethod
     async def update_user(user_id: int, user_data: UserUpdate):
-        if user_id not in users_db:
-            raise HTTPException(status_code=404, detail="Пользователь не найден")
-        
-        user = users_db[user_id]
-        
+        # Сначала проверяем, существует ли пользователь
+        await UserService.get_user(user_id)
+
+        update_fields = []
+        params = []
+        param_index = 1
+
         if user_data.email is not None:
             # Проверка уникальности email
-            for uid, existing_user in users_db.items():
-                if existing_user.email == user_data.email and uid != user_id:
-                    raise HTTPException(status_code=400, detail="Email уже используется")
-            user.email = user_data.email
-        
+            existing_user = execute_query(
+                "SELECT id FROM users WHERE email = %s AND id != %s",
+                (user_data.email, user_id),
+                fetch=True,
+            )
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email уже используется",
+                )
+            update_fields.append(f"email = ${param_index}")
+            params.append(user_data.email)
+            param_index += 1
+
         if user_data.login is not None:
-            user.login = user_data.login
-        
+            # Проверка уникальности логина
+            existing_user = execute_query(
+                "SELECT id FROM users WHERE username = %s AND id != %s",
+                (user_data.login, user_id),
+                fetch=True,
+            )
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Логин уже используется",
+                )
+            update_fields.append(f"username = ${param_index}")
+            params.append(user_data.login)
+            param_index += 1
+
         if user_data.password is not None:
-            user.password = user_data.password
-        
-        user.updated_at = datetime.now()
-        save_data()
-        
-        return {
-            "id": user.id,
-            "email": user.email,
-            "login": user.login,
-            "created_at": user.created_at.isoformat(),
-            "updated_at": user.updated_at.isoformat()
-        }
+            hashed_password = UserService.get_password_hash(user_data.password)
+            update_fields.append(f"password_hash = ${param_index}")
+            params.append(hashed_password)
+            param_index += 1
+
+        if not update_fields:
+            # нет полей для обновления -> возвращаем текущего пользователя
+            return await UserService.get_user(user_id)
+
+        params.append(user_id)  # ID пользователя в конец
+
+        try:
+            placeholders = ", ".join([f"${i+1}" for i in range(len(params))])
+            query = f"""
+                UPDATE users
+                SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ${param_index}
+                RETURNING id, email, username, created_at, updated_at
+            """
+
+            result = execute_query(query, tuple(params), fetch=True)
+
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден",
+                )
+
+            user = result[0]
+            return {
+                "id": user[0],
+                "email": user[1],
+                "login": user[2],
+                "created_at": user[3].isoformat()
+                if user[3]
+                else datetime.now().isoformat(),
+                "updated_at": user[4].isoformat()
+                if user[4]
+                else datetime.now().isoformat(),
+            }
+        except Exception as e:
+            print(f"Ошибка обновления пользователя: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка обновления пользователя",
+            )
 
     @staticmethod
     async def delete_user(user_id: int):
-        if user_id not in users_db:
-            raise HTTPException(status_code=404, detail="Пользователь не найден")
-        
-        del users_db[user_id]
-        save_data()
-        
-        return {"message": f"Пользователь с ID {user_id} удален"}
+        # существует ли пользователь
+        await UserService.get_user(user_id)
+
+        try:
+            # удаляем связанные посты
+            execute_query(
+                """
+                DELETE FROM posts WHERE user_id = %s
+            """,
+                (user_id,),
+            )
+
+            # удаляем самого пользователя
+            execute_query(
+                """
+                DELETE FROM users WHERE id = %s
+            """,
+                (user_id,),
+            )
+
+            return {"message": f"Пользователь с ID {user_id} удален"}
+        except Exception as e:
+            print(f"Ошибка удаления пользователя: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Ошибка удаления пользователя",
+            )
+
+    @staticmethod
+    async def authenticate_user(email: str, password: str):
+        try:
+            user = execute_query(
+                """
+                SELECT id, email, username, password_hash
+                FROM users
+                WHERE email = %s
+            """,
+                (email,),
+                fetch=True,
+            )
+
+            if not user:
+                return None
+
+            user = user[0]
+            user_id, email, username, password_hash = user
+
+            if not UserService.verify_password(password, password_hash):
+                return None
+
+            return {"id": user_id, "email": email, "login": username}
+        except Exception as e:
+            print(f"Ошибка аутентификации: {e}")
+            return None

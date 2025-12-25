@@ -1,102 +1,83 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Мой Блог</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>Мой Блог</h1>
-            
-            <!-- Панель пользователя -->
-            <div class="user-panel">
-                {% if current_user %}
-                    <div class="user-info">
-                        <span>Вы вошли как: <strong>{{ current_user.login }}</strong></span>
-                        <div class="user-actions">
-                            <a href="/logout" class="btn-secondary">Выйти</a>
-                            
-                            <!-- Переключение между пользователями -->
-                            {% if all_users|length > 1 %}
-                            <div class="user-switcher">
-                                <span>Переключиться на:</span>
-                                <select onchange="switchUser(this.value)">
-                                    <option value="">Выберите пользователя</option>
-                                    {% for user in all_users %}
-                                        {% if user.id != current_user.id %}
-                                        <option value="{{ user.id }}">{{ user.login }} ({{ user.email }})</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="auth-links">
-                        <a href="/login" class="btn-primary">Войти</a>
-                        <a href="/register" class="btn-secondary">Регистрация</a>
-                    </div>
+{% extends "base.html" %}
+{% block title %}🏠 Главная - Мой Блог{% endblock %}
+{% block header %}🏠 Последние посты{% endblock %}
+
+{% block content %}
+<!-- 🔍 ПОИСК -->
+<div class="search-form">
+    <form method="GET">
+        <div class="form-group">
+            <label>🔍 Найти посты по заголовку или тексту</label>
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" name="q" placeholder="Введите ключевые слова..." 
+                       value="{{ request.query_params.q or '' }}" style="flex: 1;">
+                <button type="submit" class="btn">Поиск</button>
+                {% if request.query_params.q %}
+                <a href="/" class="btn" style="background: var(--secondary);">Очистить</a>
                 {% endif %}
             </div>
-        </header>
-
-        <!-- Навигация -->
-        <div class="nav">
-            {% if current_user %}
-                <a href="/create-post" class="btn-success">📝 Создать пост</a>
-            {% endif %}
-            <a href="/api/users">📊 API пользователей</a>
-            <a href="/api/posts">📄 API постов</a>
         </div>
+    </form>
+</div>
 
-        <!-- Уведомление если нет пользователей -->
-        {% if not has_users %}
-        <div class="alert alert-warning">
-            <h3>👋 Добро пожаловать!</h3>
-            <p>Чтобы начать пользоваться блогом, сначала создайте пользователя:</p>
-            <p><a href="/register" class="btn-primary">Создать первого пользователя</a></p>
-        </div>
-        {% endif %}
+<!-- 📊 СТАТИСТИКА -->
+{% if current_user %}
+<div class="stats">
+    <div class="stat-item">
+        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">📝 {{ posts|length }}</div>
+        <div style="color: var(--text-secondary);">Постов</div>
+    </div>
+    {% if current_user %}
+    <div class="stat-item">
+        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">⭐ {{ favorites_count }}</div>
+        <div style="color: var(--text-secondary);">В избранном</div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
-        <!-- Список постов -->
-        {% if not posts %}
-            {% if has_users and current_user %}
-                <p>Пока нет постов. <a href="/create-post">Создайте первый!</a></p>
-            {% elif has_users and not current_user %}
-                <p>Пока нет постов. <a href="/login">Войдите</a> чтобы создать первый пост!</p>
-            {% endif %}
-        {% else %}
-            <div class="posts-list">
-                {% for post in posts %}
-                    <div class="post">
-                        <h3><a href="/post/{{ post.id }}">{{ post.title }}</a></h3>
-                        <p class="post-meta">
-                            <strong>Автор:</strong> {{ post.author_name }} | 
-                            <strong>Дата:</strong> {{ post.created_at }}
-                        </p>
-                        <p class="post-preview">{{ post.content_preview }}</p>
-                        <div class="post-actions">
-                            <a href="/post/{{ post.id }}">Читать полностью</a>
-                            {% if current_user and current_user.id == post.author_id %}
-                            | <a href="/edit-post/{{ post.id }}">Редактировать</a>
-                            | <a href="/delete-post/{{ post.id }}" onclick="return confirm('Удалить этот пост?')">Удалить</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
+<!-- 📱 ПОСТЫ В ГРИДЕ -->
+<div class="posts-grid">
+    {% for post in posts %}
+    <div class="post">
+        <h3>
+            <a href="/post/{{ post.id }}" style="color: var(--text-primary); text-decoration: none;">
+                {{ post.title }}
+            </a>
+        </h3>
+        <p>{{ post.content }}</p>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                👤 <strong>{{ post.author_name }}</strong>
+                <span style="margin-left: 1rem;">📅 {{ post.created_at[:16] }}</span>
             </div>
+            <a href="/post/{{ post.id }}" class="btn" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">
+                Читать →
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="post" style="text-align: center; grid-column: 1 / -1;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">📭</div>
+        <h2 style="color: var(--text-secondary);">Постов пока нет</h2>
+        {% if current_user %}
+        <p style="margin-bottom: 2rem;">Будьте первым! <a href="/create-post" class="btn">Создать пост</a></p>
+        {% else %}
+        <p style="margin-bottom: 2rem;">Зарегистрируйтесь, чтобы публиковать!</p>
+        <a href="/register" class="btn">Начать публиковать</a>
         {% endif %}
     </div>
+    {% endfor %}
+</div>
 
-    <script>
-        function switchUser(userId) {
-            if (userId) {
-                window.location.href = '/switch-user/' + userId;
-            }
-        }
-    </script>
-</body>
-</html>
+<!-- 🎉 ПУСТОЙ ПОИСК -->
+{% if request.query_params.q and not posts %}
+<div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+    <div style="font-size: 5rem; margin-bottom: 1rem; opacity: 0.3;">🔍</div>
+    <h2>Ничего не найдено</h2>
+    <p style="font-size: 1.1rem; margin-bottom: 2rem;">По запросу «{{ request.query_params.q }}» постов нет</p>
+    <a href="/" class="btn">← Вернуться на главную</a>
+</div>
+{% endif %}
+{% endblock %}

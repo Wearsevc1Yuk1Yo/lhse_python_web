@@ -4,17 +4,123 @@
     <title>{% block title %}Мой Блог{% endblock %}</title>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Arial; margin: 40px; }
-        .post { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
-        .nav { margin: 20px 0; }
-        form { max-width: 600px; }
-        input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; }
-        button { background: #4CAF50; color: white; padding: 10px; border: none; cursor: pointer; }
-        .error-container { text-align: center; margin: 50px 0; }
+        :root {
+            --primary: #4f9fe8; --primary-light: #a3cfff; --secondary: #e8ecf1;
+            --accent: #f8fafc; --text-primary: #334155; --text-secondary: #64748b;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08); --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--accent) 0%, #f1f5f9 100%);
+            color: var(--text-primary); line-height: 1.6; padding: 2rem; margin: 0;
+            min-height: 100vh;
+        }
+
+        h1 { 
+            font-size: 2.5rem; font-weight: 700; 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; margin-bottom: 2rem; text-align: center;
+        }
+
+        /* ✅ БЕЗОПАСНАЯ НАВИГАЦИЯ (УБРАНЫ position/overflow) */
+        .nav-buttons {
+            display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+            margin-bottom: 3rem; padding: 1.5rem; background: rgba(255,255,255,0.9);
+            border-radius: 20px; box-shadow: var(--shadow);
+        }
+
+        .nav-btn, .user-info {
+            padding: 0.8rem 1.8rem; border-radius: 50px; text-decoration: none;
+            font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;
+            display: inline-flex; align-items: center; text-align: center;
+        }
+
+        .nav-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+        /* ✅ ЦВЕТА КНОПОК */
+        .nav-btn[href="/"] { background: var(--primary); color: white; }
+        .nav-btn[href="/create-post"] { background: var(--success); color: white; }
+        .nav-btn[href="/profile"] { background: var(--primary-light); color: var(--text-primary); }
+        .nav-btn[href="/favorites"] { background: linear-gradient(135deg, var(--warning), #fbbf24); color: white; }
+        .nav-btn[href="/users"] { background: var(--secondary); color: var(--text-primary); }
+        .nav-btn[href="/login"], .nav-btn[href="/register"] { background: var(--secondary); color: var(--text-primary); }
+        .nav-btn[href="/logout"] { background: var(--danger); color: white; }
+        .user-info { background: none; color: var(--text-secondary); }
+
+        /* ✅ ОСНОВНЫЕ ЭЛЕМЕНТЫ */
+        .post { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 2.5rem; 
+                margin-bottom: 2rem; box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.5); }
+        .post:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+
+        .form-container { max-width: 700px; margin: 0 auto 3rem; background: rgba(255,255,255,0.95); 
+                          padding: 3rem; border-radius: 24px; box-shadow: var(--shadow); }
+
+        .form-group { margin-bottom: 2rem; }
+        .form-group label { display: block; margin-bottom: 0.75rem; font-weight: 600; color: var(--text-primary); }
+        .form-group input, .form-group textarea { 
+            width: 100%; padding: 1.2rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; background: white; transition: border-color 0.3s ease; 
+        }
+        .form-group input:focus, .form-group textarea:focus { 
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,159,232,0.1);
+        }
+
+        button, .btn { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white;
+            border: none; padding: 1rem 2rem; border-radius: 12px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: var(--shadow); text-decoration: none; 
+            display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.5rem;
+        }
+        button:hover, .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+        .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .stats { display: flex; gap: 1.5rem; margin: 2rem 0; justify-content: center; flex-wrap: wrap; }
+        .stat-item { background: rgba(255,255,255,0.8); padding: 1.5rem 2rem; border-radius: 20px; text-align: center; min-width: 140px; }
+
+        .alert-error { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; padding: 1.5rem 2rem; border-radius: 16px; margin-bottom: 2rem; border-left: 5px solid var(--danger); }
+        .alert-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; padding: 1.5rem 2rem; border-radius: 16px; margin-bottom: 2rem; border-left: 5px solid var(--success); }
+
+        .search-form { max-width: 700px; margin: 0 auto 3rem; background: rgba(255,255,255,0.95); padding: 2.5rem; border-radius: 24px; box-shadow: var(--shadow); }
+
+        @media (max-width: 768px) { 
+            body { padding: 1rem; } h1 { font-size: 2rem; } 
+            .nav-buttons { flex-direction: column; gap: 0.75rem; }
+            .posts-grid { grid-template-columns: 1fr; } 
+        }
     </style>
 </head>
 <body>
     <h1>{% block header %}Мой Блог{% endblock %}</h1>
+    
+    <!-- ✅ СБРОС СЕССИИ ПРИ ЛОГИНЕ (ФИКС) -->
+    {% if current_user %}
+    <script>
+        // ✅ ОЧИСТКА CACHE после логина
+        if (performance.navigation.type == 1) {
+            window.location.reload();
+        }
+    </script>
+    {% endif %}
+    
+    <div class="nav-buttons">
+        <a href="/" class="nav-btn">🏠 Главная</a>
+        {% if current_user %}
+            <a href="/create-post" class="nav-btn">✨ Новый пост</a>
+            <a href="/profile" class="nav-btn">👤 Профиль</a>
+            <a href="/favorites" class="nav-btn">⭐ Избранное</a>
+            <span class="user-info">👤 {{ current_user.login }}</span>
+            <a href="/logout" class="nav-btn">🚪 Выход</a>
+        {% else %}
+            <a href="/login" class="nav-btn">🔐 Вход</a>
+            <a href="/register" class="nav-btn">📝 Регистрация</a>
+        {% endif %}
+        <a href="/users" class="nav-btn">👥 Пользователи</a>
+    </div>
+    
     {% block content %}{% endblock %}
 </body>
 </html>

@@ -9,11 +9,127 @@
         <p><strong>Автор:</strong> {{ post.author_name }}</p>
         <p><strong>Создан:</strong> {{ post.created_at }}</p>
         <p><strong>Обновлен:</strong> {{ post.updated_at }}</p>
+        
+        <div class="post-likes" style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+            <span style="font-size: 18px; margin-right: 15px;">❤️ {{ post.likes_count or 0 }} лайков</span>
+            {% if current_user %}
+            <button id="likeBtn{{ post.id }}" 
+                    class="like-button btn-primary" 
+                    onclick="toggleLike({{ post.id }})">
+                {% if post.is_liked %}
+                    ❤️ Уже лайкнуто
+                {% else %}
+                    👍 Полайкать
+                {% endif %}
+            </button>
+            {% else %}
+            <a href="/login" style="color: #007bff;">Войдите чтобы лайкать</a>
+            {% endif %}
+            {% if current_user %}
+            <button id="fav{{ post.id }}" onclick="toggleFavorite({{ post.id }})" 
+                style="padding: 8px 16px; background: {{ 'gold' if post.is_favorited else '#6c757d' }}; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                {% if post.is_favorited %}⭐ В избранном{% else %}⭐ Избранное{% endif %} ({{ post.favorites_count }})
+            </button>
+            {% endif %}
+        </div>
+
         <div style="white-space: pre-line; margin: 20px 0;">{{ post.content }}</div>
     </div>
+
+    <h3>Комментарии</h3>
+
+    {% if comments %}
+        <ul class="comments">
+            {% for c in comments %}
+                <li>
+                    <p><strong>{{ c.author_name }}</strong> ({{ c.created_at }})</p>
+                    <p style="white-space: pre-line">{{ c.content }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Пока нет комментариев.</p>
+    {% endif %}
+
+    <h3>💬 Комментарии ({{ post.comments|length }})</h3>
+
+    {% if current_user %}
+    <form method="post" action="/post/{{ post.id }}/comment" style="margin-bottom: 20px;">
+        <textarea name="content" required
+                placeholder="Ваш комментарий..."
+                style="width: 100%; height: 80px; padding: 10px; border-radius: 5px;"></textarea>
+        <button type="submit" style="margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">Опубликовать</button>
+    </form>
+    {% else %}
+    <p><a href="/login">Войдите</a>, чтобы комментировать</p>
+    {% endif %}
+
+    {% for comment in post.comments %}
+    <div style="border-left: 3px solid #007bff; padding-left: 15px; margin: 15px 0; background: #f8f9fa; padding: 15px; border-radius: 5px;">
+        <strong>{{ comment[2] }}</strong> <small>({{ comment[4].strftime('%H:%M %d.%m.%Y') }})</small>
+        <p>{{ comment[3] }}</p>
+    </div>
+    {% endfor %}
+
     <div class="nav">
-        <a href="/">← На главную</a> | 
+        <a href="/">← На главную</a> |
         <a href="/edit-post/{{ post.id }}">✏️ Редактировать</a> |
         <a href="/delete-post/{{ post.id }}" onclick="return confirm('Удалить этот пост?')">🗑 Удалить</a>
+        <script>
+        async function toggleLike(postId) {
+            const button = document.getElementById('likeBtn' + postId);
+            const likesSpan = button.parentElement.querySelector('span');
+            const originalText = button.innerHTML;
+            
+            button.disabled = true;
+            button.innerHTML = '⏳ ...';
+            
+            try {
+                const response = await fetch(`/api/likes/posts/${postId}/toggle`, {
+                    method: 'POST',
+                    credentials: 'include'  // Для session cookies
+                });
+                
+                const data = await response.json();
+                
+                // Обновляем счетчик
+                likesSpan.textContent = `❤️ ${data.likes_count} `;
+                
+                // Обновляем кнопку
+                if (data.action === 'added') {
+                    button.innerHTML = '❤️ лайкнуто';
+                    button.className = 'like-button btn-success';
+                } else {
+                    button.innerHTML = '👍 лайкнуть';
+                    button.className = 'like-button btn-primary';
+                }
+                
+            } catch (error) {
+                console.error('Ошибка лайка:', error);
+                alert('❌ Ошибка лайка');
+                button.innerHTML = originalText;
+            } finally {
+                button.disabled = false;
+            }
+        }
+        </script>
+        <script>
+        async function toggleFavorite(postId) {
+            const btn = document.getElementById('fav' + postId);
+            btn.disabled = true;
+            btn.innerHTML = '⏳';
+            
+            const res = await fetch(`/api/favorites/${postId}/toggle`, {method: 'POST'});
+            const data = await res.json();
+            
+            btn.innerHTML = data.action === 'added' ? 
+                `⭐ В избранном (${data.favorites_count})` : 
+                `⭐ Избранное (${data.favorites_count})`;
+            btn.style.background = data.action === 'added' ? 'gold' : '#6c757d';
+            btn.disabled = false;
+        }
+        </script>
+    
     </div>
+
 {% endblock %}
