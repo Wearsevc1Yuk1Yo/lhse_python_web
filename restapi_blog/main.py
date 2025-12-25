@@ -432,6 +432,8 @@ async def handle_login(request: Request):
             {"request": request, "error": "Неверный логин или пароль"},
             status_code=400,
         )
+    # request.session["user_id"] = user_id
+    request.session.clear()
     request.session["user_id"] = user_id
     print(f"✅ Логин успешен: {username}")
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -439,8 +441,13 @@ async def handle_login(request: Request):
 
 @app.get("/logout")
 async def logout(request: Request):
-    request.session.pop("user_id", None)
-    return RedirectResponse(url="/", status_code=303)
+    request.session.clear()
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie("session")
+    return response
+
+    # request.session.pop("user_id", None)
+    # return RedirectResponse(url="/", status_code=303)
 
 
 
